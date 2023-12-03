@@ -198,7 +198,7 @@ public class xivrSettings : Window, IDisposable
             doUpdate = true;
 
         ImGui.Text(lngOptions.offsetAmountYFPS_Line1); ImGui.SameLine();
-        if (ImGui.SliderFloat("##DrawUISetings:fpsyoff", ref cfg!.data.offsetAmountYFPS, -100, 100, "%.f"))
+        if (ImGui.SliderFloat("##DrawUISetings:fpsyoff", ref cfg!.data.offsetAmountYFPS, -500, 100, "%.f"))
             doUpdate = true;
 
         ImGui.Text(lngOptions.offsetAmountZFPS_Line1); ImGui.SameLine();
@@ -206,7 +206,7 @@ public class xivrSettings : Window, IDisposable
             doUpdate = true;
 
         ImGui.Text(lngOptions.offsetAmountYFPSMount_Line1); ImGui.SameLine();
-        if (ImGui.SliderFloat("##DrawUISetings:mountyoff", ref cfg!.data.offsetAmountYFPSMount, -100, 100, "%.f"))
+        if (ImGui.SliderFloat("##DrawUISetings:mountyoff", ref cfg!.data.offsetAmountYFPSMount, -500, 100, "%.f"))
             doUpdate = true;
 
         ImGui.Text(lngOptions.offsetAmountZFPSMount_Line1); ImGui.SameLine();
