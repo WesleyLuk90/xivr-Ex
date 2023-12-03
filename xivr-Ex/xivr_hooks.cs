@@ -1618,12 +1618,12 @@ namespace xivr
                 Matrix4x4 horizonLockMatrix = Matrix4x4.Identity;
                 frfCalculateViewMatrix = true;
 
-                if (inCutscene.Current || gameMode.Current == CameraModes.ThirdPerson || (!Plugin.cfg!.data.immersiveMovement && !isMounted))
+
+                if (gameMode.Current == CameraModes.ThirdPerson)
                 {
-                    if (gameMode.Current == CameraModes.ThirdPerson)
-                        neckOffsetAvg.AddNew(rawGameCamera->Position.Y);
+                    neckOffsetAvg.AddNew(rawGameCamera->Position.Y);
                 }
-                else
+                else if (!inCutscene.Current && (Plugin.cfg!.data.immersiveMovement || isMounted))
                 {
                     UpdateBoneCamera();
                     Vector3 frontBackDiff = rawGameCamera->LookAt - rawGameCamera->Position;
