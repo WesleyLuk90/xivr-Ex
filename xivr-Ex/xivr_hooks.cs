@@ -436,7 +436,6 @@ namespace xivr
                 Plugin.Log!.Info($"-- mode2d = {Plugin.cfg.data.mode2d}");
                 Plugin.Log!.Info($"-- asymmetricProjection = {Plugin.cfg.data.asymmetricProjection}");
                 Plugin.Log!.Info($"-- immersiveMovement = {Plugin.cfg.data.immersiveMovement}");
-                Plugin.Log!.Info($"-- immersiveFull = {Plugin.cfg.data.immersiveFull}");
                 Plugin.Log!.Info($"-- ultrawideshadows = {Plugin.cfg.data.ultrawideshadows}");
                 Plugin.Log!.Info($"-- osk = {Plugin.cfg.data.osk}");
                 Plugin.Log!.Info($"-- disableXboxShoulder = {Plugin.cfg.data.disableXboxShoulder}");
@@ -4154,7 +4153,7 @@ namespace xivr
                             //Log!.Info($"{l.Translation.X} {l.Translation.Y} {l.Translation.Z} | {w.Translation.X} {w.Translation.Y} {w.Translation.Z} | {t.Translation.X} {t.Translation.Y} {t.Translation.Z}");
 
                             //boneArray[rootBone].SetReference(true, true);
-                            if (!Plugin.cfg!.data.immersiveMovement && !Plugin.cfg!.data.immersiveFull && Plugin.cfg!.data.motioncontrol && false)
+                            if (!Plugin.cfg!.data.immersiveMovement && Plugin.cfg!.data.motioncontrol && false)
                             {
                                 Vector3 angles = new Vector3(0, 0, 0);
                                 //if (xivr_Ex.cfg.data.conloc)
