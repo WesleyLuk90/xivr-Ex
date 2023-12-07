@@ -464,9 +464,9 @@ namespace xivr
                             smm.SetActive(SharedMemoryPlugins.XIVR);
                             //smm.OutputStatus();
 
-                            //Point hmdSize = Imports.GetBufferSize();
+                            Point hmdSize = Imports.GetBufferSize();
                             cfg!.data.hmdWidth = 1920;
-                            cfg!.data.hmdHeight = 1440;
+                            cfg!.data.hmdHeight = 1920 * hmdSize.Y / hmdSize.X;
                             cfg.Save();
                             Log!.Info($"Saving HMD Size {cfg!.data.hmdWidth}x{cfg!.data.hmdHeight}");
                         }
