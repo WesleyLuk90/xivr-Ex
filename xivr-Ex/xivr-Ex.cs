@@ -356,6 +356,13 @@ namespace xivr
                         cfg!.Save(); doUpdate = true;
                         break;
                     }
+                case "armmultiplier":
+                    {
+                        float.TryParse(regex.Groups[2].Value, out var amount);
+                        cfg!.data.armMultiplier = amount;
+                        cfg!.Save(); doUpdate = true;
+                        break;
+                    }
                 case "headcontoggle":
                     {
                         cfg!.data.hmdloc = !cfg!.data.hmdloc;
