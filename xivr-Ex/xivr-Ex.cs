@@ -353,7 +353,7 @@ namespace xivr
                     }
                 case "motcontoggle":
                     {
-                        cfg!.data.immersiveMovement = !cfg!.data.motioncontrol;
+                        cfg!.data.motioncontrol = !cfg!.data.motioncontrol;
                         if (cfg!.data.motioncontrol)
                         {
                             ChatGui.Print("Enabling motion control");
@@ -464,9 +464,9 @@ namespace xivr
                             smm.SetActive(SharedMemoryPlugins.XIVR);
                             //smm.OutputStatus();
 
-                            Point hmdSize = Imports.GetBufferSize();
-                            cfg!.data.hmdWidth = hmdSize.X;
-                            cfg!.data.hmdHeight = hmdSize.Y;
+                            //Point hmdSize = Imports.GetBufferSize();
+                            cfg!.data.hmdWidth = 1920;
+                            cfg!.data.hmdHeight = 1440;
                             cfg.Save();
                             Log!.Info($"Saving HMD Size {cfg!.data.hmdWidth}x{cfg!.data.hmdHeight}");
                         }
