@@ -22,6 +22,7 @@ using Dalamud.Interface.Windowing;
 using xivr.Windows;
 using MemoryManager.Structures;
 using static xivr.Configuration;
+using Dalamud.Utility;
 
 namespace xivr
 {
@@ -77,7 +78,7 @@ namespace xivr
         private int UpdateValue = 2;
 
         public unsafe Plugin()
-        { 
+        {
             try
             {
                 cfg = PluginInterface!.GetPluginConfig() as Configuration ?? new Configuration();
@@ -95,8 +96,8 @@ namespace xivr
 
                 Interop.InitializeFromAttributes(this);
                 CheckLoadRequiredStateInJSON();
-                
-                if(dalamudErrorWindow.CheckDalamudOptions())
+
+                if (dalamudErrorWindow.CheckDalamudOptions())
                     ToggleErrorWindow();
 
                 try
@@ -145,10 +146,10 @@ namespace xivr
             //Log!.Info($"{pluginJSON}");
             string jsonData = File.ReadAllText(pluginJSON);
             string[] parts = jsonData.Split("\"LoadRequiredState\":");
-            if(parts.Length > 1)
+            if (parts.Length > 1)
             {
                 string[] subparts = parts[1].Split(",");
-                if(subparts.Length > 1)
+                if (subparts.Length > 1)
                 {
                     if (int.Parse(subparts[0]) != 2)
                     {
@@ -193,7 +194,7 @@ namespace xivr
                 catch (Exception e) { Log!.Error($"Failed loading vr dll\n{e}"); }
             }
             catch (Exception e) { Log!.Error($"Failed initalizing vr\n{e}"); }
-            
+
             return false;
         }
 
@@ -352,14 +353,37 @@ namespace xivr
                     }
                 case "motcontoggle":
                     {
-                        cfg!.data.motioncontrol = !cfg!.data.motioncontrol;
+                        cfg!.data.immersiveMovement = !cfg!.data.motioncontrol;
+                        if (cfg!.data.motioncontrol)
+                        {
+                            ChatGui.Print("Enabling motion control");
+                        }
+                        else
+                        {
+                            ChatGui.Print("Disabling motion control");
+                        }
                         cfg!.Save(); doUpdate = true;
                         break;
                     }
                 case "armmultiplier":
                     {
                         float.TryParse(regex.Groups[2].Value, out var amount);
+                        ChatGui.Print("Set arm multiplier to {0}".Format(amount));
                         cfg!.data.armMultiplier = amount;
+                        cfg!.Save(); doUpdate = true;
+                        break;
+                    }
+                case "immersive":
+                    {
+                        cfg!.data.immersiveMovement = !cfg!.data.immersiveMovement;
+                        if (cfg!.data.immersiveMovement)
+                        {
+                            ChatGui.Print("Enabling immersive movement");
+                        }
+                        else
+                        {
+                            ChatGui.Print("Disabling immersive movement");
+                        }
                         cfg!.Save(); doUpdate = true;
                         break;
                     }
@@ -448,7 +472,7 @@ namespace xivr
                         }
 
                         origWindowSize = xivr_hooks.GetWindowSize();
-                        if(cfg!.data.vLog)
+                        if (cfg!.data.vLog)
                             Log!.Info($"Saving ScreenSize {origWindowSize.X}x{origWindowSize.Y}");
 
                         if (cfg!.data.autoResize && cfg!.data.hmdWidth != 0 && cfg!.data.hmdHeight != 0)
@@ -494,7 +518,7 @@ namespace xivr
                         hasResized = false;
                     }
 
-                    if(hasMoved == true)
+                    if (hasMoved == true)
                     {
                         xivr_hooks.WindowMove(true);
                         Log!.Info($"Resetting window position");
@@ -557,7 +581,7 @@ namespace xivr
 
                 haveLoaded = false;
                 haveDrawn = false;
-               
+
                 if (hasResized == true)
                 {
                     xivr_hooks.WindowResize(origWindowSize.X, origWindowSize.Y);
