@@ -31,6 +31,8 @@ using FFXIVClientStructs.Interop.Attributes;
 
 using xivr.Structures;
 using xivr.StructuresEx;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
 
 namespace xivr
 {
@@ -585,7 +587,7 @@ namespace xivr
         private void FirstToThirdPersonView()
         {
             Imports.Recenter();
-            Plugin.CommandManager!.ProcessCommand("/autofacetarget on");
+            GameConfig.SetConfig(ConfigOption.AutoFaceTargetOnAction, true);
             //----
             // Set the near clip
             //----
@@ -623,7 +625,7 @@ namespace xivr
         private void ThirdToFirstPersonView()
         {
             Imports.Recenter();
-            Plugin.CommandManager!.ProcessCommand("/autofacetarget off");
+            GameConfig.SetConfig(ConfigOption.AutoFaceTargetOnAction, false);
             //----
             // Set the near clip
             //----
@@ -1598,6 +1600,18 @@ namespace xivr
                 CalculateViewMatrixHook?.Disable();
         }
 
+        private float? GetObjectHeight(DrawObject* drawObject)
+        {
+            if (drawObject != null)
+            {
+                return MemoryHelper.Read<float>((IntPtr)drawObject + 0x274);
+            }
+            else
+            {
+                return null;
+            }
+        }
+
         //----
         // This function is also called for ui character stuff so only
         // act on it the first time its run per frame
@@ -1647,10 +1661,11 @@ namespace xivr
                             horizonLockMatrix = Matrix4x4.CreateFromAxisAngle(new Vector3(1, 0, 0), rawGameCamera->CurrentVRotation);
                             rawGameCamera->LookAt.Y = rawGameCamera->Position.Y;
                         }
-
                         if (gameMode.Current == CameraModes.FirstPerson)
                             if (!isMounted)
+                            {
                                 horizonLockMatrix = hmdOffsetFirstPerson * horizonLockMatrix;
+                            }
                             else
                                 horizonLockMatrix = hmdOffsetMountedFirstPerson * horizonLockMatrix;
                         else
@@ -3613,7 +3628,8 @@ namespace xivr
                 if (objPose != null)
                 {
                     float diffHeadNeck = MathF.Abs(objPose->ModelPose[csb.e_neck].Translation.Y - objPose->ModelPose[csb.e_head].Translation.Y);
-                    headBoneMatrix = objPose->ModelPose[csb.e_neck].ToMatrix() * plrSkeletonPosition;
+                    var height = GetObjectHeight(bonedCharacter->GameObject.DrawObject) ?? 1;
+                    headBoneMatrix = objPose->ModelPose[csb.e_neck].ToMatrix() * Matrix4x4.CreateScale(height) * plrSkeletonPosition;
                     headBoneMatrix.M42 += diffHeadNeck;
                 }
             }
