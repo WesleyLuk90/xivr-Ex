@@ -585,6 +585,7 @@ namespace xivr
         private void FirstToThirdPersonView()
         {
             Imports.Recenter();
+            Plugin.CommandManager!.ProcessCommand("/autofacetarget on");
             //----
             // Set the near clip
             //----
@@ -622,6 +623,7 @@ namespace xivr
         private void ThirdToFirstPersonView()
         {
             Imports.Recenter();
+            Plugin.CommandManager!.ProcessCommand("/autofacetarget off");
             //----
             // Set the near clip
             //----
