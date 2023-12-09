@@ -572,7 +572,7 @@ namespace xivr
 
         bool haveSavedEquipmentSet = false;
         CharEquipData currentEquipmentSet = new CharEquipData();
-        
+
         Dictionary<hkaPose, Dictionary<string, int>> boneNames = new Dictionary<hkaPose, Dictionary<string, int>>();
         Matrix4x4 bridgeLocal = Matrix4x4.Identity;
         Vector3 neckPosition = new Vector3(0, 0, 0);
@@ -1442,7 +1442,7 @@ namespace xivr
                 }
                 else if (!inCutscene.Current && (Plugin.cfg!.data.immersiveMovement || isMounted))
                 {
-                    UpdateBoneCamera();
+                    var headBoneMatrix = UpdateBoneCamera();
                     Vector3 frontBackDiff = rawGameCamera->LookAt - rawGameCamera->Position;
                     //rawGameCamera->Position = headBoneMatrix[curEye].Translation;
                     rawGameCamera->Position = headBoneMatrix.Translation;
@@ -3385,33 +3385,47 @@ namespace xivr
             }
         }
 
-        private void UpdateBoneCamera()
+        private Matrix4x4 UpdateBoneCamera()
         {
             if (inCutscene.Current || gameMode.Current == CameraModes.ThirdPerson)
-                return;
+            {
+                return Matrix4x4.Identity;
+            }
 
             Character* bonedCharacter = GetCharacterOrMouseover();
             if (bonedCharacter == null)
-                return;
+            {
+                return Matrix4x4.Identity;
+            }
 
             Structures.Model* model = (Structures.Model*)bonedCharacter->GameObject.DrawObject;
             if (model == null)
-                return;
+            {
+                return Matrix4x4.Identity;
+            }
 
             Skeleton* skeleton = model->skeleton;
             if (skeleton == null)
-                return;
+            {
+                return Matrix4x4.Identity;
+            }
 
             SkeletonResourceHandle* srh = skeleton->SkeletonResourceHandles[0];
             if (srh == null)
-                return;
+            {
+                return Matrix4x4.Identity;
+            }
 
             hkaSkeleton* hkaSkel = srh->HavokSkeleton;
             if (hkaSkel == null)
-                return;
+            {
+                return Matrix4x4.Identity;
+            }
 
             if (!commonBones.ContainsKey((UInt64)hkaSkel))
-                return;
+            {
+                return Matrix4x4.Identity;
+            }
 
             var plrSkeletonPosition = model->basePosition.ToMatrix();
 
@@ -3430,10 +3444,12 @@ namespace xivr
                 {
                     float diffHeadNeck = MathF.Abs(objPose->ModelPose[csb.e_neck].Translation.Y - objPose->ModelPose[csb.e_head].Translation.Y);
                     var height = GetObjectHeight(bonedCharacter->GameObject.DrawObject) ?? 1;
-                    headBoneMatrix = objPose->ModelPose[csb.e_neck].ToMatrix() * Matrix4x4.CreateScale(height) * plrSkeletonPosition;
+                    var headBoneMatrix = objPose->ModelPose[csb.e_neck].ToMatrix() * Matrix4x4.CreateScale(height) * plrSkeletonPosition;
                     headBoneMatrix.M42 += diffHeadNeck;
+                    return headBoneMatrix;
                 }
             }
+            return Matrix4x4.Identity;
         }
 
         private void UpdateBoneScales()
