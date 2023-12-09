@@ -33,6 +33,7 @@ using xivr.Structures;
 using xivr.StructuresEx;
 using Dalamud.Utility;
 using FFXIVClientStructs.FFXIV.Client.Graphics.Scene;
+using xivr.Game;
 
 namespace xivr
 {
@@ -205,6 +206,8 @@ namespace xivr
             }
         }
 
+        private PlayerData playerData = new PlayerData();
+
         public bool Initialize()
         {
             if (Plugin.cfg!.data.vLog)
@@ -224,7 +227,7 @@ namespace xivr
                 globalScaleAddress = (UInt64)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_TextScale);
                 RenderTargetManagerAddress = (UInt64)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_RenderTargetManagerInstance);
                 csCameraManager = (ControlSystemCameraManager*)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_ControlSystemCameraManager);
-                selectScreenMouseOver = (UInt64)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_SelectScreenMouseOver);
+                playerData.Initialize();
                 movementManager = (MovementManager*)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_MovementManager);
 
                 DisableSetCursorPosAddr = (UInt64)Plugin.SigScanner!.ScanText(Signatures.g_DisableSetCursorPosAddr);
@@ -2165,14 +2168,14 @@ namespace xivr
                 {
                     if (MathF.Abs(up_down) > 0 || MathF.Abs(left_right) > 0)
                     {
-                        Character* bonedCharacter = GetCharacterOrMouseover(2);
+                        Character* bonedCharacter = playerData.GetCharacterOrMouseover(2);
                         RawGameCamera* gameCamera = scCameraManager->GetActive();
                         if (bonedCharacter != null && gameCamera != null)
                             bonedCharacter->GameObject.Rotate(gameCamera->CurrentHRotation - angles.Y);
                     }
                     else
                     {
-                        Character* bonedCharacter = GetCharacterOrMouseover(2);
+                        Character* bonedCharacter = playerData.GetCharacterOrMouseover(2);
                         RawGameCamera* gameCamera = scCameraManager->GetActive();
                         if (bonedCharacter != null && gameCamera != null)
                         {
@@ -3098,7 +3101,7 @@ namespace xivr
             if (gameCamera == null)
                 return;
 
-            Character* bonedCharacter = GetCharacterOrMouseover();
+            Character* bonedCharacter = playerData.GetCharacterOrMouseover();
             if (bonedCharacter == null)
                 return;
 
@@ -3377,7 +3380,7 @@ namespace xivr
                 return Matrix4x4.Identity;
             }
 
-            Character* bonedCharacter = GetCharacterOrMouseover();
+            Character* bonedCharacter = playerData.GetCharacterOrMouseover();
             if (bonedCharacter == null)
             {
                 return Matrix4x4.Identity;
@@ -3442,7 +3445,7 @@ namespace xivr
             if (inCutscene.Current || gameMode.Current == CameraModes.ThirdPerson)
                 return;
 
-            Character* bonedCharacter = GetCharacterOrMouseover();
+            Character* bonedCharacter = playerData.GetCharacterOrMouseover();
             if (bonedCharacter == null)
                 return;
 
@@ -3741,23 +3744,6 @@ namespace xivr
 
 
 
-
-        private Character* GetCharacterOrMouseover(byte charFrom = 3)
-        {
-            PlayerCharacter? player = Plugin.ClientState!.LocalPlayer;
-            UInt64 selectMouseOver = *(UInt64*)selectScreenMouseOver;
-
-            if (player == null && selectMouseOver == 0)
-                return null;
-
-            if (selectMouseOver != 0 && (charFrom & 1) == 1)
-                return (Character*)selectMouseOver;
-            else if (player != null && (charFrom & 2) == 2)
-                return (Character*)player!.Address;
-            else
-                return null;
-        }
-
         private void CheckVisibilityInner(Character* character)
         {
             if (character == null)
@@ -3818,7 +3804,7 @@ namespace xivr
             //----
             // Check the player
             //----
-            Character* character = GetCharacterOrMouseover(2);
+            Character* character = playerData.GetCharacterOrMouseover(2);
             if (character != null && character != targetSystem->ObjectFilterArray0[0])
                 CheckVisibilityInner(character);
 
@@ -3905,7 +3891,7 @@ namespace xivr
             if (inCutscene.Current || gameMode.Current == CameraModes.ThirdPerson)
                 return;
 
-            Character* character = GetCharacterOrMouseover(2);
+            Character* character = playerData.GetCharacterOrMouseover(2);
             if (character != null && character != targetSystem->ObjectFilterArray0[0])
                 GetMultiplayerIKDataInner(true, character, hmdMatrix, lhcMatrix, rhcMatrix);
             //else
