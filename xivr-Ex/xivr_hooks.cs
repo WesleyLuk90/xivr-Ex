@@ -292,7 +292,6 @@ namespace xivr
                 globalScaleAddress = (UInt64)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_TextScale);
                 RenderTargetManagerAddress = (UInt64)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_RenderTargetManagerInstance);
                 csCameraManager = (ControlSystemCameraManager*)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_ControlSystemCameraManager);
-                //charList = (CharSelectionCharList*)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_SelectScreenCharacterList);
                 selectScreenMouseOver = (UInt64)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_SelectScreenMouseOver);
                 movementManager = (MovementManager*)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_MovementManager);
 
@@ -326,7 +325,6 @@ namespace xivr
                             continue;
 
                         string name = MemoryHelper.ReadStringNullTerminated(new IntPtr(cfgItem.Name));
-                        //Plugin.Log!.Info($"Location : {i} cfgGroup: {cfgId}  name: {name}");
                         if (cfgSearchStrings.Contains(name))
                         {
                             if (!MappedSettings.ContainsKey(name))
@@ -335,39 +333,6 @@ namespace xivr
                         }
                     }
                 }
-                /*
-                foreach(KeyValuePair<string, List<Tuple<uint, uint>>> item in MappedSettings)
-                {
-                    Plugin.Log!.Info($"Key Found {item.Key}");
-                    for(int i = 0; i < item.Value.Count; i++)
-                    {
-                        Plugin.Log!.Info($"Location : {i} cfgGroup: {item.Value[i].Item1} cfgOffset: {item.Value[i].Item2}");
-                    }
-                }
-                */
-
-                /*
-                resourceManager = *(ResourceManager**)xivr_Ex.SigScanner!.GetStaticAddressFromSig(Signatures.g_ResourceManagerInstance);
-                if (resourceManager != null)
-                {
-                    foreach(StdPair<uint, Pointer<StdMap<uint, Pointer<ResourceHandle>>>> item in *resourceManager->ResourceGraph->CharaContainer.MainMap)
-                    {
-                        foreach (StdPair<uint, Pointer<ResourceHandle>> inner in *item.Item2.Value)
-                        {
-                            SkeletonResourceHandle* skelResource = (SkeletonResourceHandle*)inner.Item2.Value;
-                            if (skelResource->ResourceHandle.FileType == 0x736B6C62) // blks
-                            {
-                                string filename = "" + skelResource->ResourceHandle.FileName;
-                                string[] parts = filename.Split('/');
-                                if(parts.Length > 4)
-                                    Log!.Info($"{skelResource->ResourceHandle.Id} {skelResource->ResourceHandle.Category} {parts[1]} {parts[4]}");
-                                else
-                                    Log!.Info($"{skelResource->ResourceHandle.Id} {skelResource->ResourceHandle.Category} {filename}");
-                            }
-                        }
-                    }
-                }
-                */
 
                 curRenderMode = RenderModes.None;
                 GetThreadedDataInit();
@@ -601,8 +566,6 @@ namespace xivr
 
                 if (bonedCharacter != null)
                 {
-                    //bonedCharacter->DrawData.Flags1 = HideHeadValue;
-
                     UInt64 equipOffset = (UInt64)(UInt64*)&bonedCharacter->DrawData;
                     fixed (CharEquipSlotData* ptr = &currentEquipmentSet.Head)
                         ChangeEquipmentHook!.Original(equipOffset, CharEquipSlots.Head, ptr);
@@ -610,10 +573,6 @@ namespace xivr
                         ChangeEquipmentHook!.Original(equipOffset, CharEquipSlots.Ears, ptr);
                     fixed (CharEquipSlotData* ptr = &currentEquipmentSet.Neck)
                         ChangeEquipmentHook!.Original(equipOffset, CharEquipSlots.Neck, ptr);
-
-                    //ChangeWeaponHook!.Original(equipOffset, CharWeaponSlots.MainHand, currentWeaponSet.MainHand, 0, 1, 0, 0);
-                    //ChangeWeaponHook!.Original(equipOffset, CharWeaponSlots.OffHand, currentWeaponSet.OffHand, 0, 1, 0, 0);
-                    //ChangeWeaponHook!.Original(equipOffset, CharWeaponSlots.uk3, currentWeaponSet.Uk3, 0, 1, 0, 0);
 
                     RefreshObject((GameObject*)player.Address);
                 }
@@ -678,23 +637,16 @@ namespace xivr
         CharEquipSlotData hiddenEquipHead = new CharEquipSlotData(6154, 99, 0);
         CharEquipSlotData hiddenEquipEars = new CharEquipSlotData(0, 0, 0);
         CharEquipSlotData hiddenEquipNeck = new CharEquipSlotData(0, 0, 0);
-        //CharWeaponSlotData hiddenEquipWeaponMainHand = new CharWeaponSlotData(0, 0, 0, 0);
-        //CharWeaponSlotData hiddenEquipWeaponOffHand = new CharWeaponSlotData(0, 0, 0, 0);
 
         bool haveSavedEquipmentSet = false;
         CharEquipData currentEquipmentSet = new CharEquipData();
-        //CharWeaponData currentWeaponSet = new CharWeaponData();
-
-        //private Dictionary<UInt64, List<KeyValuePair<Vector3, hkQsTransformf>>> boneLayout = new Dictionary<UInt64, List<KeyValuePair<Vector3, hkQsTransformf>>>();
+        
         Dictionary<hkaPose, Dictionary<string, int>> boneNames = new Dictionary<hkaPose, Dictionary<string, int>>();
         Matrix4x4 bridgeLocal = Matrix4x4.Identity;
         Vector3 neckPosition = new Vector3(0, 0, 0);
 
-
-
         Matrix4x4 mntSkeletonPosition = Matrix4x4.Identity;
         Matrix4x4 mntSkeletonPositionI = Matrix4x4.Identity;
-        //Matrix4x4[] headBoneMatrix = { Matrix4x4.Identity, Matrix4x4.Identity };
         Matrix4x4 headBoneMatrix = Matrix4x4.Identity;
         Matrix4x4 headBoneMatrixI = Matrix4x4.Identity;
         Vector3 eyeMidPoint = new Vector3(0, 0, 0);
@@ -800,7 +752,6 @@ namespace xivr
                 lhcPalmMatrix = Imports.GetFramePose(poseType.LeftHandPalm, -1);// * hmdWorldScale;
                 rhcMatrix = Imports.GetFramePose(poseType.RightHand, -1);// * hmdWorldScale;
                 rhcPalmMatrix = Imports.GetFramePose(poseType.RightHandPalm, -1);// * hmdWorldScale;
-                //hmdMatrix.Translation = headBoneMatrix.Translation;
                 Matrix4x4.Invert(hmdMatrix, out hmdMatrixI);
                 avgHCPosition = (lhcMatrix.Translation + rhcMatrix.Translation) / 2;
 
@@ -827,7 +778,6 @@ namespace xivr
                 }
 
                 ScreenSettings* screenSettings = *(ScreenSettings**)((UInt64)frameworkInstance + 0x7A8);
-                //Log!.Info($"{(int)dx11DeviceInstance->SwapChain->Height} {(int)dx11DeviceInstance->SwapChain->Width}");
                 Imports.GetCursorPos(out currentMouse);
                 Imports.ScreenToClient((IntPtr)screenSettings->hWnd, out currentMouse);
 
@@ -856,7 +806,6 @@ namespace xivr
                         ThirdToFirstPersonView();
 
                 isMounted = false;
-                //uiAngleOffset += 0.5f;
 
                 PlayerCharacter? player = Plugin.ClientState!.LocalPlayer;
                 if (player != null)
@@ -915,18 +864,8 @@ namespace xivr
                 {
                     timer = -1;
                 }
-
-                //if (curRenderMode == RenderModes.TwoD)
-                //    curEye = 0;
-                //else
-                //    curEye = nextEye[curEye];
-                //curEye = 0;
             }
 
-            //xivr_Ex.cfg!.data.immersiveMovement = true;
-            //isMounted = false;
-            //SetFramePose();
-            //Log!.Info($"-- Update --  {curEye}");
         }
 
         public void toggleDalamudMode()
@@ -1019,13 +958,10 @@ namespace xivr
                 gameProjectionMatrix[1].M43 *= -1;
 
                 hmdOffsetFirstPerson = Matrix4x4.CreateTranslation(0, (Plugin.cfg.data.offsetAmountYFPS / 100), (Plugin.cfg.data.offsetAmountZFPS / 100));
-                //hmdOffsetFirstPerson *= hmdWorldScale;
 
                 hmdOffsetThirdPerson = Matrix4x4.CreateTranslation((Plugin.cfg.data.offsetAmountX / 100), (Plugin.cfg.data.offsetAmountY / 100), (Plugin.cfg.data.offsetAmountZ / 100));
-                //hmdOffsetThirdPerson *= hmdWorldScale;
 
                 hmdOffsetMountedFirstPerson = Matrix4x4.CreateTranslation(0, (Plugin.cfg.data.offsetAmountYFPSMount / 100), (Plugin.cfg.data.offsetAmountZFPSMount / 100));
-                //hmdOffsetMountedFirstPerson *= hmdWorldScale;
             }
         }
 
@@ -1034,9 +970,6 @@ namespace xivr
             if (hooksSet && enableVR)
             {
                 SetRenderingMode();
-
-                //if (DisableCameraCollisionAddr != 0)
-                //    SafeMemory.Write<UInt64>((IntPtr)DisableCameraCollisionAddr, DisableCameraCollisionOverride);
             }
         }
 
@@ -1050,12 +983,6 @@ namespace xivr
             targetSystem->ObjectFilterArray1.Length = 0;
             targetSystem->ObjectFilterArray2.Length = 0;
             targetSystem->ObjectFilterArray3.Length = 0;
-
-            if (hooksSet && enableVR)
-            {
-                //if (DisableCameraCollisionAddr != 0)
-                //    SafeMemory.Write<UInt64>((IntPtr)DisableCameraCollisionAddr, DisableCameraCollisionOrig);
-            }
         }
 
         public void Dispose()
