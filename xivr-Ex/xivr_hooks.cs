@@ -603,62 +603,6 @@ namespace xivr
             timer.Enabled = false;
         }
 
-        class ChangedType<T>
-        {
-            private T old = default(T);
-            public T Current
-            {
-                get => old;
-                set
-                {
-                    Changed = false;
-                    if (!EqualityComparer<T>.Default.Equals(value, old))
-                    {
-                        old = value;
-                        Changed = true;
-                    }
-                }
-            }
-            public bool Changed { get; private set; }
-            public ChangedType(T newVal = default(T))
-            {
-                old = newVal;
-                Current = newVal;
-                Changed = false;
-            }
-            public ChangedType<T> Set(T newVal)
-            {
-                Current = newVal;
-                return this;
-            }
-        }
-
-        class ChangedTypeBool
-        {
-            private bool old = false;
-            public bool Current
-            {
-                get => old;
-                set
-                {
-                    Changed = !(value == old);
-                    old = value;
-                }
-            }
-            public bool Changed { get; private set; }
-            public ChangedTypeBool(bool newVal = false)
-            {
-                old = newVal;
-                Current = newVal;
-                Changed = false;
-            }
-            public ChangedTypeBool Set(bool newVal)
-            {
-                Current = newVal;
-                return this;
-            }
-        }
-
         private ChangedType<CameraModes> gameMode = new ChangedType<CameraModes>(CameraModes.None);
 
         bool outputBonesOnce = false;
