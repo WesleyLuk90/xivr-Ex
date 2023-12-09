@@ -692,8 +692,6 @@ namespace xivr
 
 
 
-        Matrix4x4 plrSkeletonPosition = Matrix4x4.Identity;
-        Matrix4x4 plrSkeletonPositionI = Matrix4x4.Identity;
         Matrix4x4 mntSkeletonPosition = Matrix4x4.Identity;
         Matrix4x4 mntSkeletonPositionI = Matrix4x4.Identity;
         //Matrix4x4[] headBoneMatrix = { Matrix4x4.Identity, Matrix4x4.Identity };
@@ -3612,14 +3610,14 @@ namespace xivr
             if (!commonBones.ContainsKey((UInt64)hkaSkel))
                 return;
 
-            plrSkeletonPosition = model->basePosition.ToMatrix();
-            Matrix4x4.Invert(plrSkeletonPosition, out plrSkeletonPositionI);
+            var plrSkeletonPosition = model->basePosition.ToMatrix();
 
-            mntSkeletonPosition = Matrix4x4.Identity;
+            var mntSkeletonPosition = Matrix4x4.Identity;
             Structures.Model* modelMount = (Structures.Model*)model->mountedObject;
             if (modelMount != null)
+            {
                 mntSkeletonPosition = modelMount->basePosition.ToMatrix();
-            Matrix4x4.Invert(mntSkeletonPosition, out mntSkeletonPositionI);
+            }
 
             stCommonSkelBoneList csb = commonBones[(UInt64)hkaSkel];
             if (skeleton->PartialSkeletonCount > 1)
@@ -3815,259 +3813,6 @@ namespace xivr
                 }
             }
         }
-
-        private void UpdateBoneLayout()
-        {
-            Matrix4x4 hmdFlip = Matrix4x4.CreateFromAxisAngle(new Vector3(0, 1, 0), 90 * Deg2Rad) * Matrix4x4.CreateFromAxisAngle(new Vector3(0, 0, 1), -90 * Deg2Rad);
-            Matrix4x4 hmdMatrixBody = hmdFlip * hmdMatrixI;
-            Matrix4x4 lhcMatrixCXZ = convertXZ * lhcMatrix * convertXZ;
-            Matrix4x4 rhcMatrixCXZ = convertXZ * rhcMatrix * convertXZ;
-
-            PlayerCharacter? player = Plugin.ClientState!.LocalPlayer;
-            //if (player != null && curEye == 0 && gameMode.Current == CameraModes.FirstPerson)
-            //if (player != null && gameMode.Current == CameraModes.FirstPerson && !inCutscene.Current)
-
-            Character* bonedCharacter = GetCharacterOrMouseover();
-            if (bonedCharacter == null)
-                return;
-
-            //----
-            // Gets the skeletal system
-            //----
-            Structures.Model* model = (Structures.Model*)bonedCharacter->GameObject.DrawObject;
-            if (model == null)
-                return;
-
-            Skeleton* skeleton = model->skeleton;
-            if (skeleton == null)
-                return;
-
-            //----
-            // Sets the main skeletal bone names used
-            //----
-            SkeletonResourceHandle* srh = skeleton->SkeletonResourceHandles[0];
-            if (srh == null)
-                return;
-
-            hkaSkeleton* hkaSkel = srh->HavokSkeleton;
-            if (hkaSkel == null)
-                return;
-
-            //if (!commonBones.ContainsKey((UInt64)hkaSkel))
-            //    return;
-
-            //stCommonSkelBoneList csb = commonBones[(UInt64)hkaSkel];
-
-            //skeleton->Transform.Rotation = Quaternion.Identity;
-            //skeleton->Transform.Position = Vector3.Zero;
-            plrSkeletonPosition = skeleton->Transform.ToMatrix();
-            Matrix4x4.Invert(plrSkeletonPosition, out plrSkeletonPositionI);
-
-            boneLayout.Clear();
-
-            //----
-            // Loops though the skeletal parts and gets the pose layouts
-            //----
-            for (ushort p = 0; p < skeleton->PartialSkeletonCount; p++)
-            {
-                hkaPose* objPose = skeleton->PartialSkeletons[p].GetHavokPose(0);
-                if (objPose == null)
-                    continue;
-
-                /*if(p == 0)
-                { 
-                    if (cb.e_head >= 0)
-                    {
-                        foreach (short id in cb.layout[cb.e_neck].Value)
-                        {
-                            hkQsTransformf identTransI = new hkQsTransformf();
-                            identTransI.Translation = objPose->LocalPose[id].Translation;
-                            identTransI.Rotation = Quaternion.Identity.Convert();
-                            identTransI.Scale = new Vector3(0.0001f, 0.0001f, 0.0001f).Convert();
-                            objPose->LocalPose[id] = identTransI;
-                        }
-
-                        hkQsTransformf identTrans = new hkQsTransformf();
-                        identTrans.Translation = objPose->LocalPose[cb.e_neck].Translation;
-                        identTrans.Rotation = Quaternion.CreateFromYawPitchRoll(0, 0, 180 * Deg2Rad).Convert();
-                        objPose->LocalPose[cb.e_neck] = identTrans;
-                    }
-                }
-                else
-                {
-                    for (int i = 0; i < objPose->LocalPose.Length; i++)
-                    {
-                        hkQsTransformf transformN = objPose->LocalPose[i];
-                        transformN.Translation = new Vector3(0, 0, 0).Convert();
-                        transformN.Rotation = Quaternion.Identity.Convert();
-                        transformN.Scale = new Vector3(0.0001f, 0.0001f, 0.0001f).Convert();
-                        objPose->LocalPose[i] = transformN;
-                    }
-                }
-                */
-                UInt64 objPose64 = (UInt64)objPose;
-                boneLayout.Add(objPose64, new Dictionary<BoneList, short>());
-
-                //----
-                // Loops though the pose bones and updates the ones that have tracking
-                //----
-                Bone[] boneArray = new Bone[objPose->LocalPose.Length];
-                for (short i = 0; i < objPose->LocalPose.Length; i++)
-                {
-                    string boneName = objPose->Skeleton->Bones[i].Name.String!;
-                    short parentId = objPose->Skeleton->ParentIndices[i];
-
-                    BoneList boneKey = BoneOutput.boneNameToEnum.GetValueOrDefault<string, BoneList>(boneName, BoneList._unknown_);
-                    //Log!.Info($"{boneName} | {boneKey}");
-                    if (boneKey == BoneList._unknown_)
-                    {
-                        if (!BoneOutput.reportedBones.ContainsKey(boneName))
-                        {
-                            Plugin.Log!.Info($"{p} {objPose64:X} {i} : Error finding bone {boneName}");
-                            BoneOutput.reportedBones.Add(boneName, true);
-                        }
-                        boneName = "_unknown_";
-                    }
-                    else
-                        boneLayout[objPose64][boneKey] = i;
-
-                    //Log!.Info($"{p} {(UInt64)objPose:X} {i} : {boneName} {boneKey} {parentId}");
-
-                    if (parentId < 0)
-                        boneArray[i] = new Bone(boneKey, i, parentId, null, objPose->LocalPose[i], objPose->Skeleton->ReferencePose[i]);
-                    else
-                        boneArray[i] = new Bone(boneKey, i, parentId, boneArray[parentId], objPose->LocalPose[i], objPose->Skeleton->ReferencePose[i]);
-
-
-                    //Log!.Info($"Bone {i}/{objPose->LocalPose.Length} Name {(BoneListEn)boneKey} | {boneName}");
-
-                    //boneArray[i].updatePosition = true;
-                    //boneArray[i].updateRotation = true;
-                    //boneArray[i].updateScale = true;
-                    //boneArray[i].SetReference(false);
-                    //boneArray[i].setLocal(); 
-                    //boneArray[i].CalculateMatrix();
-                    //boneArray[i].boneMatrix = plrSkeletonPosition * boneArray[i].boneMatrix;
-                    //boneArray[i].SetTransformFromLocalBase(false);
-                    //boneArray[i].SetTransformFromLocalBase();
-
-                    if (outputBonesOnce == false)
-                    {
-                        //boneArray[i].SetReference(false);
-                        //boneArray[i].OutputToParent(false);
-
-                        /*
-                        Log!.Info($"Bone {i}/{objPose->LocalPose.Length} Name {boneName}");
-                        Log!.Info($"{boneArray[i].transform.Rotation.X}, {boneArray[i].transform.Rotation.Y}, {boneArray[i].transform.Rotation.Z}, {boneArray[i].transform.Rotation.W}");
-                        Log!.Info($"{boneArray[i].transform.Translation.X}, {boneArray[i].transform.Translation.Y}, {boneArray[i].transform.Translation.Z}, {boneArray[i].transform.Translation.W}");
-                        Log!.Info($"-");
-                        Log!.Info($"{boneMatrix.M11}, {boneMatrix.M12}, {boneMatrix.M13}, {boneMatrix.M14}");
-                        Log!.Info($"{boneMatrix.M21}, {boneMatrix.M22}, {boneMatrix.M23}, {boneMatrix.M24}");
-                        Log!.Info($"{boneMatrix.M31}, {boneMatrix.M32}, {boneMatrix.M33}, {boneMatrix.M34}");
-                        Log!.Info($"{boneMatrix.M41}, {boneMatrix.M42}, {boneMatrix.M43}, {boneMatrix.M44}");
-                        Log!.Info($"-");
-                        Log!.Info($"{quatMat.X}, {quatMat.Y}, {quatMat.Z}, {quatMat.W}");
-                        Log!.Info($"{vecMat.X}, {vecMat.Y}, {vecMat.Z}, 0");
-                        Log!.Info($"-");
-                        */
-                    }
-                }
-                /*
-                short rootBone = boneLayout[objPose64].GetValueOrDefault<BoneList, short>((BoneList)BoneListEn.e_root, -1);
-                short headBone = boneLayout[objPose64].GetValueOrDefault<BoneList, short>((BoneList)BoneListEn.e_head, -1);
-
-                if(rootBone >= 0)
-                {
-                    //short wristR = boneLayout[objPose64].GetValueOrDefault<BoneList, short>((BoneList)BoneListEn.e_wrist_r, -1);
-                    //short handR = boneLayout[objPose64].GetValueOrDefault<BoneList, short>((BoneList)BoneListEn.e_hand_r, -1);
-
-                    short neck = boneLayout[objPose64].GetValueOrDefault<BoneList, short>((BoneList)BoneListEn.e_neck, -1);
-
-                    if(neck >= 0)
-                    {
-                        //Matrix4x4 thmdMatrix = hmdMatrix * hmdFlip * headBoneMatrix * curViewMatrixWithoutHMD;
-                        //Matrix4x4 thmdMatrix = hmdMatrix;// * curViewMatrixWithoutHMD;// * hmdFlip * headBoneMatrix * curViewMatrixWithoutHMD;
-                        //thmdMatrix.M42 -= (xivr_Ex.cfg!.data.offsetAmountYFPSMount / 100);
-                        //thmdMatrix.M43 += (xivr_Ex.cfg!.data.offsetAmountZFPSMount / 100);
-                        //hmdMatrix = thmdMatrix;
-
-                    }
-
-                    /*if (wristR >= 0 && handR >= 0)
-                    {
-                        Matrix4x4 rhcLocal = rhcPalmMatrix * Matrix4x4.CreateScale(-1, 1, -1);
-                        hkQsTransformf curModel = objPose->ModelPose[handR];
-                        curModel.Translation = rhcLocal.Translation.Convert();
-                        curModel.Translation.Y += 1.0f;
-
-                        curModel.Rotation = Quaternion.CreateFromRotationMatrix(rhcLocal).Convert();
-                        curModel.Scale = rhcLocal.GetScale().Convert();
-                        objPose->ModelPose[handR] = curModel;
-
-
-                    }*//*
-                }
-                */
-                //objPose->ModelInSync = 0;
-                //objPose->LocalInSync = 0;
-                //syncModelSpaceFn!(objPose);
-
-                //if (waist >= 0) boneArray[waist].SetScale(new Vector3(0.0001f, 0.0001f, 0.0001f));
-                //if (cubb.e_scabbard_l.boneId >= 0) boneArray[cubb.e_scabbard_l.boneId].SetScale(new Vector3(0.0001f, 0.0001f, 0.0001f));
-                //if (cubb.e_scabbard_r.boneId >= 0) boneArray[cubb.e_scabbard_r.boneId].SetScale(new Vector3(0.0001f, 0.0001f, 0.0001f));
-                //if (cubb.e_sheathe_l.boneId >= 0) boneArray[cubb.e_sheathe_l.boneId].SetScale(new Vector3(0.0001f, 0.0001f, 0.0001f));
-                //if (cubb.e_sheathe_r.boneId >= 0) boneArray[cubb.e_sheathe_r.boneId].SetScale(new Vector3(0.0001f, 0.0001f, 0.0001f));
-
-
-                rawBoneList[objPose64] = boneArray;
-
-                if (outputBonesOnce == false)
-                {
-                    //Matrix4x4 boneMatI = boneArray[0].ConvertToLocal(rhcMatrix);
-                    /*
-                    Log!.Info($"-");
-                    Log!.Info($"{rhcMatrix.M11}, {rhcMatrix.M12}, {rhcMatrix.M13}, {rhcMatrix.M14}");
-                    Log!.Info($"{rhcMatrix.M21}, {rhcMatrix.M22}, {rhcMatrix.M23}, {rhcMatrix.M24}");
-                    Log!.Info($"{rhcMatrix.M31}, {rhcMatrix.M32}, {rhcMatrix.M33}, {rhcMatrix.M34}");
-                    Log!.Info($"{rhcMatrix.M41}, {rhcMatrix.M42}, {rhcMatrix.M43}, {rhcMatrix.M44}");
-                    Log!.Info($"-");
-                    Log!.Info($"{boneMatI.M11}, {boneMatI.M12}, {boneMatI.M13}, {boneMatI.M14}");
-                    Log!.Info($"{boneMatI.M21}, {boneMatI.M22}, {boneMatI.M23}, {boneMatI.M24}");
-                    Log!.Info($"{boneMatI.M31}, {boneMatI.M32}, {boneMatI.M33}, {boneMatI.M34}");
-                    Log!.Info($"{boneMatI.M41}, {boneMatI.M42}, {boneMatI.M43}, {boneMatI.M44}");
-                    Log!.Info($"-");
-                    */
-
-                    outputBonesOnce = true;
-                    //boneArray[0].SetReference(true, false);
-                    //boneArray[0].Output();
-                    //boneArray[0].Output(0, true);
-                }
-                //rawBoneList[objPose64][0].ScaleAll(rawBoneList[objPose64], 0, 0, 0);
-
-
-
-
-                /*
-                hkIKSetup ikSetup1 = new hkIKSetup();
-                ikSetup1.m_firstJointIdx = 1;
-                ikSetup1.m_secondJointIdx = 11;
-                ikSetup1.m_endBoneIdx = 33;
-                ikSetup1.m_hingeAxisLS = new Vector4(0f, 0f, 0f, 0f);
-                ikSetup1.m_endTargetMS = new Vector4(hmdMatrix.Translation.X, hmdMatrix.Translation.Y, hmdMatrix.Translation.Z, 0.0f);
-                //ikSetup1.m_endTargetRotationMS = q;
-                //ikSetup1.m_endBoneOffsetLS = new Vector4(q.X, q.Y, q.Z, q.W);
-                //ikSetup1.m_endBoneRotationOffsetLS = q;
-                ikSetup1.m_enforceEndPosition = true;
-                ikSetup1.m_enforceEndRotation = false;
-
-                twoBoneIKFn!(&lockItem, ikSetup1, curUsePose);*/
-
-            }
-
-            outputBonesOnce = true;
-        }
-
 
         private int tCount = 0;
         bool firstRunBones = false;
