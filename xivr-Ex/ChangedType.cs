@@ -3,37 +3,33 @@
 namespace xivr
 {
 
-
-    public unsafe partial class xivr_hooks
+    class ChangedType<T>
     {
-        class ChangedType<T>
+        private T old = default(T);
+        public T Current
         {
-            private T old = default(T);
-            public T Current
+            get => old;
+            set
             {
-                get => old;
-                set
+                Changed = false;
+                if (!EqualityComparer<T>.Default.Equals(value, old))
                 {
-                    Changed = false;
-                    if (!EqualityComparer<T>.Default.Equals(value, old))
-                    {
-                        old = value;
-                        Changed = true;
-                    }
+                    old = value;
+                    Changed = true;
                 }
             }
-            public bool Changed { get; private set; }
-            public ChangedType(T newVal = default(T))
-            {
-                old = newVal;
-                Current = newVal;
-                Changed = false;
-            }
-            public ChangedType<T> Set(T newVal)
-            {
-                Current = newVal;
-                return this;
-            }
+        }
+        public bool Changed { get; private set; }
+        public ChangedType(T newVal = default(T))
+        {
+            old = newVal;
+            Current = newVal;
+            Changed = false;
+        }
+        public ChangedType<T> Set(T newVal)
+        {
+            Current = newVal;
+            return this;
         }
     }
 }

@@ -53,7 +53,7 @@ namespace xivr
     }
 
 
-    public unsafe partial class xivr_hooks
+    public unsafe class xivr_hooks
     {
 
         protected Dictionary<ActionButtonLayout, HandleInputDelegate> inputList = new Dictionary<ActionButtonLayout, HandleInputDelegate>();

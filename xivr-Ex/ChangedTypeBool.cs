@@ -1,33 +1,28 @@
 ﻿namespace xivr
 {
-
-
-    public unsafe partial class xivr_hooks
+    class ChangedTypeBool
     {
-        class ChangedTypeBool
+        private bool old = false;
+        public bool Current
         {
-            private bool old = false;
-            public bool Current
+            get => old;
+            set
             {
-                get => old;
-                set
-                {
-                    Changed = !(value == old);
-                    old = value;
-                }
+                Changed = !(value == old);
+                old = value;
             }
-            public bool Changed { get; private set; }
-            public ChangedTypeBool(bool newVal = false)
-            {
-                old = newVal;
-                Current = newVal;
-                Changed = false;
-            }
-            public ChangedTypeBool Set(bool newVal)
-            {
-                Current = newVal;
-                return this;
-            }
+        }
+        public bool Changed { get; private set; }
+        public ChangedTypeBool(bool newVal = false)
+        {
+            old = newVal;
+            Current = newVal;
+            Changed = false;
+        }
+        public ChangedTypeBool Set(bool newVal)
+        {
+            Current = newVal;
+            return this;
         }
     }
 }
