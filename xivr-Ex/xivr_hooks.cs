@@ -55,6 +55,7 @@ namespace xivr
 
     public unsafe partial class xivr_hooks
     {
+
         protected Dictionary<ActionButtonLayout, HandleInputDelegate> inputList = new Dictionary<ActionButtonLayout, HandleInputDelegate>();
 
         byte[] GetThreadedDataASM =
@@ -206,10 +207,13 @@ namespace xivr
             }
         }
 
-        private PlayerData playerData = new PlayerData();
+        private BoneListCache boneListCache;
+        private PlayerData playerData;
 
         public bool Initialize()
         {
+            boneListCache = new BoneListCache();
+            playerData = new PlayerData(boneListCache);
             if (Plugin.cfg!.data.vLog)
                 Plugin.Log!.Info($"Initialize A {initalized} {hooksSet}");
 
@@ -1389,17 +1393,6 @@ namespace xivr
                 CalculateViewMatrixHook?.Disable();
         }
 
-        private float? GetObjectHeight(DrawObject* drawObject)
-        {
-            if (drawObject != null)
-            {
-                return MemoryHelper.Read<float>((IntPtr)drawObject + 0x274);
-            }
-            else
-            {
-                return null;
-            }
-        }
 
         //----
         // This function is also called for ui character stuff so only
@@ -1430,7 +1423,7 @@ namespace xivr
                 }
                 else if (!inCutscene.Current && (Plugin.cfg!.data.immersiveMovement || isMounted))
                 {
-                    var headBoneMatrix = UpdateBoneCamera();
+                    var headBoneMatrix = playerData.GetHeadBoneTransform();
                     Vector3 frontBackDiff = rawGameCamera->LookAt - rawGameCamera->Position;
                     //rawGameCamera->Position = headBoneMatrix[curEye].Translation;
                     rawGameCamera->Position = headBoneMatrix.Translation;
@@ -2940,8 +2933,6 @@ namespace xivr
         }
 
 
-        Dictionary<UInt64, stCommonSkelBoneList> commonBones = new Dictionary<UInt64, stCommonSkelBoneList>();
-
         /*
          
         Transform float* hkaPose.?calculateBoneModelSpace@hkaPose@@AEBAAEBVhkQsTransformf@@H@Z(Pose, Count)
@@ -3250,10 +3241,12 @@ namespace xivr
             if (hkaSkel == null)
                 return;
 
-            if (!commonBones.ContainsKey((UInt64)hkaSkel))
+            stCommonSkelBoneList? maybeCsb = boneListCache.Get(hkaSkel);
+            if (maybeCsb is null)
+            {
                 return;
-
-            stCommonSkelBoneList csb = commonBones[(UInt64)hkaSkel];
+            }
+            stCommonSkelBoneList csb = (stCommonSkelBoneList)maybeCsb;
 
             Matrix4x4 matrixHead = (Matrix4x4)ikElement->hmdMatrix;
             Matrix4x4 matrixLHC = (Matrix4x4)ikElement->lhcMatrix;
@@ -3373,72 +3366,6 @@ namespace xivr
             }
         }
 
-        private Matrix4x4 UpdateBoneCamera()
-        {
-            if (inCutscene.Current || gameMode.Current == CameraModes.ThirdPerson)
-            {
-                return Matrix4x4.Identity;
-            }
-
-            Character* bonedCharacter = playerData.GetCharacterOrMouseover();
-            if (bonedCharacter == null)
-            {
-                return Matrix4x4.Identity;
-            }
-
-            Structures.Model* model = (Structures.Model*)bonedCharacter->GameObject.DrawObject;
-            if (model == null)
-            {
-                return Matrix4x4.Identity;
-            }
-
-            Skeleton* skeleton = model->skeleton;
-            if (skeleton == null)
-            {
-                return Matrix4x4.Identity;
-            }
-
-            SkeletonResourceHandle* srh = skeleton->SkeletonResourceHandles[0];
-            if (srh == null)
-            {
-                return Matrix4x4.Identity;
-            }
-
-            hkaSkeleton* hkaSkel = srh->HavokSkeleton;
-            if (hkaSkel == null)
-            {
-                return Matrix4x4.Identity;
-            }
-
-            if (!commonBones.ContainsKey((UInt64)hkaSkel))
-            {
-                return Matrix4x4.Identity;
-            }
-
-            var plrSkeletonPosition = model->basePosition.ToMatrix();
-
-            var mntSkeletonPosition = Matrix4x4.Identity;
-            Structures.Model* modelMount = (Structures.Model*)model->mountedObject;
-            if (modelMount != null)
-            {
-                mntSkeletonPosition = modelMount->basePosition.ToMatrix();
-            }
-
-            stCommonSkelBoneList csb = commonBones[(UInt64)hkaSkel];
-            if (skeleton->PartialSkeletonCount > 1)
-            {
-                hkaPose* objPose = skeleton->PartialSkeletons[0].GetHavokPose(0);
-                if (objPose != null)
-                {
-                    float diffHeadNeck = MathF.Abs(objPose->ModelPose[csb.e_neck].Translation.Y - objPose->ModelPose[csb.e_head].Translation.Y);
-                    var height = GetObjectHeight(bonedCharacter->GameObject.DrawObject) ?? 1;
-                    var headBoneMatrix = objPose->ModelPose[csb.e_neck].ToMatrix() * Matrix4x4.CreateScale(height) * plrSkeletonPosition;
-                    headBoneMatrix.M42 += diffHeadNeck;
-                    return headBoneMatrix;
-                }
-            }
-            return Matrix4x4.Identity;
-        }
 
         private void UpdateBoneScales()
         {
@@ -3465,10 +3392,12 @@ namespace xivr
             if (hkaSkel == null)
                 return;
 
-            if (!commonBones.ContainsKey((UInt64)hkaSkel))
+            stCommonSkelBoneList? maybeCsb = boneListCache.Get(hkaSkel);
+            if (maybeCsb is null)
+            {
                 return;
-
-            stCommonSkelBoneList csb = commonBones[(UInt64)hkaSkel];
+            }
+            stCommonSkelBoneList csb = (stCommonSkelBoneList)maybeCsb;
 
             Transform transformS = skeleton->Transform;
             transformS.Rotation = Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), bonedCharacter->GameObject.Rotation);
@@ -3847,11 +3776,11 @@ namespace xivr
             {
                 hkaSkeleton* hkaSkel = srh->HavokSkeleton;
                 if (hkaSkel != null)
-                    if (!commonBones.ContainsKey((UInt64)hkaSkel))
-                    {
-                        commonBones.Add((UInt64)hkaSkel, new stCommonSkelBoneList(skeleton));
-                        Plugin.Log!.Info($"commonBoneCount {commonBones.Count} {commonBones[(UInt64)hkaSkel].armLength}");
-                    }
+                {
+                    Plugin.Log!.Info($"Adding bone list cache");
+                    boneListCache.Add(hkaSkel, skeleton);
+                    Plugin.Log!.Info($"Added bone list cache");
+                }
             }
 
             float armMultiplier = 100.0f;
