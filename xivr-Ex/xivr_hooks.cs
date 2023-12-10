@@ -2168,14 +2168,14 @@ namespace xivr
                 {
                     if (MathF.Abs(up_down) > 0 || MathF.Abs(left_right) > 0)
                     {
-                        Character* bonedCharacter = playerData.GetCharacterOrMouseover(2);
+                        Character* bonedCharacter = playerData.GetCharacter();
                         RawGameCamera* gameCamera = scCameraManager->GetActive();
                         if (bonedCharacter != null && gameCamera != null)
                             bonedCharacter->GameObject.Rotate(gameCamera->CurrentHRotation - angles.Y);
                     }
                     else
                     {
-                        Character* bonedCharacter = playerData.GetCharacterOrMouseover(2);
+                        Character* bonedCharacter = playerData.GetCharacter();
                         RawGameCamera* gameCamera = scCameraManager->GetActive();
                         if (bonedCharacter != null && gameCamera != null)
                         {
@@ -3804,7 +3804,7 @@ namespace xivr
             //----
             // Check the player
             //----
-            Character* character = playerData.GetCharacterOrMouseover(2);
+            Character* character = playerData.GetCharacter();
             if (character != null && character != targetSystem->ObjectFilterArray0[0])
                 CheckVisibilityInner(character);
 
@@ -3891,7 +3891,7 @@ namespace xivr
             if (inCutscene.Current || gameMode.Current == CameraModes.ThirdPerson)
                 return;
 
-            Character* character = playerData.GetCharacterOrMouseover(2);
+            Character* character = playerData.GetCharacter();
             if (character != null && character != targetSystem->ObjectFilterArray0[0])
                 GetMultiplayerIKDataInner(true, character, hmdMatrix, lhcMatrix, rhcMatrix);
             //else

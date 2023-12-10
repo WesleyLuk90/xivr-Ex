@@ -16,20 +16,32 @@ namespace xivr.Game
         {
             selectScreenMouseOver = (UInt64)Plugin.SigScanner!.GetStaticAddressFromSig(Signatures.g_SelectScreenMouseOver);
         }
-        public unsafe Character* GetCharacterOrMouseover(byte charFrom = 3)
+
+        public unsafe Character* GetCharacter()
         {
             PlayerCharacter? player = Plugin.ClientState!.LocalPlayer;
+
+            if (player != null)
+            {
+                return (Character*)player!.Address;
+            }
+            else
+            {
+                return null;
+            }
+        }
+        public unsafe Character* GetCharacterOrMouseover()
+        {
             UInt64 selectMouseOver = *(UInt64*)selectScreenMouseOver;
 
-            if (player == null && selectMouseOver == 0)
-                return null;
-
-            if (selectMouseOver != 0 && (charFrom & 1) == 1)
+            if (selectMouseOver != 0)
+            {
                 return (Character*)selectMouseOver;
-            else if (player != null && (charFrom & 2) == 2)
-                return (Character*)player!.Address;
+            }
             else
-                return null;
+            {
+                return GetCharacter();
+            }
         }
     }
 }
