@@ -533,8 +533,6 @@ namespace xivr
                     cfg!.data.runRecenter = false;
                     Imports.Recenter();
                 }
-
-                xivr_hooks.Update(framework);
             }
         }
 

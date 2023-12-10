@@ -607,9 +607,6 @@ namespace xivr
         }
 
 
-        public void Update(IFramework framework)
-        {
-        }
         public void RunUpdate()
         {
             if (hooksSet && enableVR)
@@ -866,16 +863,6 @@ namespace xivr
             hookManager.DisposeFunctionHandles(Plugin.cfg.data.vLog);
         }
 
-        private void AddClearCommand(Structures.Texture* rendTexture, Structures.Texture* depthTexture, bool depth = false, float r = 0, float g = 0, float b = 0, float a = 0)
-        {
-            UInt64 threadedOffset = GetThreadedOffset();
-            if (threadedOffset != 0)
-            {
-                SetRenderTargetFn!(threadedOffset, 1, &rendTexture, depthTexture, 0, 0);
-                AddClearCommand(depth, r, g, b, a);
-            }
-        }
-
         private void AddClearCommand(bool depth = false, float r = 0, float g = 0, float b = 0, float a = 0)
         {
             UInt64 threadedOffset = GetThreadedOffset();
@@ -895,36 +882,6 @@ namespace xivr
                     cmd->clearDepth = 1;
                     cmd->clearStencil = 0;
                     cmd->clearCheck = 0;
-                    PushbackFn((threadedOffset + 0x18), (UInt64)(*(int*)(threadedOffset + 0x8)), queueData);
-                }
-            }
-        }
-
-
-        private void AddCopyResourceCommand(Structures.Texture* destination, Structures.Texture* source, int eye = -1)
-        {
-            UInt64 threadedOffset = GetThreadedOffset();
-            if (threadedOffset != 0)
-            {
-                UInt64 queueData = AllocateQueueMemmoryFn!(threadedOffset, 0x48);
-                if (queueData != 0)
-                {
-                    Imports.ZeroMemory((byte*)queueData, 0x48);
-                    cmdType10* cmd = (cmdType10*)queueData;
-                    cmd->SwitchType = 10;
-                    cmd->uk1 = 0;
-                    cmd->Destination = destination;
-                    cmd->subResourceDestination = 0;
-                    cmd->X = 0;
-                    cmd->Y = 0;
-                    cmd->Z = 0;
-                    cmd->Source = source;
-                    cmd->subResourceSource = 0;
-                    cmd->useRect = 0;
-                    cmd->rectTop = 0;
-                    cmd->rectLeft = 0;
-                    cmd->rectBottom = 0;
-                    cmd->rectLeft = 0;
                     PushbackFn((threadedOffset + 0x18), (UInt64)(*(int*)(threadedOffset + 0x8)), queueData);
                 }
             }
@@ -1735,75 +1692,6 @@ namespace xivr
             ChangeEquipmentHook!.Original(address, index, item);
         }
 
-        //----
-        // ChangeWeapon
-        //----
-        private delegate void ChangeWeaponDg(UInt64 address, CharWeaponSlots index, CharWeaponSlotData item, byte d, byte e, byte f, byte g);
-        //[Signature(Signatures.ChangeWeapon, DetourName = nameof(ChangeWeaponFn))]
-        private Hook<ChangeWeaponDg>? ChangeWeaponHook = null;
-
-        //[HandleStatus("ChangeWeapon")]
-        public void ChangeWeaponStatus(bool status, bool dispose)
-        {
-            if (dispose)
-                ChangeWeaponHook?.Dispose();
-            else
-                if (status)
-                ChangeWeaponHook?.Enable();
-            else
-                ChangeWeaponHook?.Disable();
-        }
-
-        private void ChangeWeaponFn(UInt64 address, CharWeaponSlots index, CharWeaponSlotData item, byte d, byte e, byte f, byte g)
-        {
-            if (hooksSet && enableVR)
-            {
-                PlayerCharacter? player = Plugin.ClientState!.LocalPlayer;
-                if (player != null)
-                {
-                    Character* bonedCharacter = (Character*)player.Address;
-                    if (bonedCharacter != null)
-                    {
-                        UInt64 equipOffset = (UInt64)(UInt64*)&bonedCharacter->DrawData;
-                        if (equipOffset == address)
-                        {
-                            haveSavedEquipmentSet = true;
-                            //currentWeaponSet.Data[(int)index] = item.Data;
-                        }
-                    }
-                }
-            }
-            //Log!.Info($"ChangeWeaponFn {address:X} {index} | {item.Type}, {item.Id}, {item.Variant}, {item.Dye} | {d}, {e}, {f}, {g}");
-            ChangeWeaponHook!.Original(address, index, item, d, e, f, g);
-        }
-
-
-        //----
-        // EquipGearsetInternal
-        //----
-        private delegate void EquipGearsetInternalDg(UInt64 address, int b, byte c);
-        //[Signature(Signatures.EquipGearsetInternal, DetourName = nameof(EquipGearsetInternalFn))]
-        private Hook<EquipGearsetInternalDg>? EquipGearsetInternalHook = null;
-
-        //[HandleStatus("EquipGearsetInternal")]
-        public void EquipGearsetInternalStatus(bool status, bool dispose)
-        {
-            if (dispose)
-                EquipGearsetInternalHook?.Dispose();
-            else
-                if (status)
-                EquipGearsetInternalHook?.Enable();
-            else
-                EquipGearsetInternalHook?.Disable();
-        }
-
-        private void EquipGearsetInternalFn(UInt64 address, int b, byte c)
-        {
-            //Log!.Info($"EquipGearsetInternalFn {address:X} {b} {c}");
-            EquipGearsetInternalHook!.Original(address, b, c);
-        }
-
-
 
         //----
         // Input.GetAnalogueValue
@@ -2260,26 +2148,6 @@ namespace xivr
             roll = 1 * MathF.Atan2(2f * (q1.X * q1.Y + q1.Z * q1.W), 1f - 2f * (q1.Y * q1.Y + q1.Z * q1.Z));  // Roll
             return new Vector3(pitch, yaw, roll);
         }
-
-        float AngleFromToVector(Vector3 from, Vector3 to)
-        {
-            float kEpsilonNormalSqrt = 1e-15F;
-            // sqrt(a) * sqrt(b) = sqrt(a * b) -- valid for real numbers
-            float denominator = (float)Math.Sqrt(from.LengthSquared() * to.LengthSquared());
-            if (denominator < kEpsilonNormalSqrt)
-                return 0F;
-
-            float rawDot = Vector3.Dot(from, to);
-            float dot = Math.Clamp(rawDot / denominator, -1f, 1f);
-            float angle = ((float)Math.Acos(dot)) * Rad2Deg;
-            float atanA = MathF.Atan2(from.X, from.Z);
-            float atanb = MathF.Atan2(to.X, to.Z);
-
-            Plugin.Log!.Info($"{atanb * Rad2Deg} {rawDot} {dot}");
-            return angle * ((rawDot < 0) ? -1 : 1);
-        }
-
-
 
 
         [DllImport("user32.dll", CharSet = CharSet.Auto, CallingConvention = CallingConvention.StdCall)]
@@ -2963,109 +2831,6 @@ namespace xivr
         private twoBoneIKDg? twoBoneIKFn = null;
 
         //----
-        // threadedLookAtParent
-        //----
-        private delegate void threadedLookAtParentDg(UInt64* a1, UInt64 a2, uint a3);
-        //[Signature(Signatures.threadedLookAtParent, DetourName = nameof(threadedLookAtParentFn))]
-        private Hook<threadedLookAtParentDg>? threadedLookAtParentHook = null;
-
-        //[HandleStatus("threadedLookAtParent")]
-        public void threadedLookAtParentStatus(bool status, bool dispose)
-        {
-            if (dispose)
-                threadedLookAtParentHook?.Dispose();
-            else
-                if (status)
-                threadedLookAtParentHook?.Enable();
-            else
-                threadedLookAtParentHook?.Disable();
-        }
-
-        private unsafe void threadedLookAtParentFn(UInt64* a1, UInt64 a2, uint a3)
-        {
-            //Log!.Info("threadedLookAtParentFn");
-
-            threadedLookAtParentHook?.Original(a1, a2, a3);
-        }
-
-        //----
-        // lookAtIK
-        //----
-        private delegate byte* lookAtIKDg(byte* a1, float* a2, Vector4* targetPosition, float a4, Vector4* offsetHeadPosition, float* a6);
-        //[Signature(Signatures.lookAtIK, DetourName = nameof(lookAtIKFn))]
-        private Hook<lookAtIKDg>? lookAtIKHook = null;
-
-        //[HandleStatus("lookAtIK")]
-        public void lookAtIKStatus(bool status, bool dispose)
-        {
-            if (dispose)
-                lookAtIKHook?.Dispose();
-            else
-                if (status)
-                lookAtIKHook?.Enable();
-            else
-                lookAtIKHook?.Disable();
-        }
-        private unsafe byte* lookAtIKFn(byte* a1, float* a2, Vector4* targetPosition, float a4, Vector4* offsetHeadPosition, float* a6)
-        {
-            //Vector3 angles = GetAngles(hmdMatrix);
-            //Matrix4x4 headMatrix = hmdMatrix * Matrix4x4.CreateScale(1, -1, 1);
-            //headMatrix
-            //headMatrix.M41 = hmdMatrix.M41;
-            //headMatrix.M42 += 1.4f; //hmdMatrix.M42 + 1.4f;
-            //headMatrix.M43 = hmdMatrix.M43;
-
-            //Log!.Info($"float1 {a2[0]} {a2[1]} {a2[2]} {a2[3]}");
-            //Log!.Info($"float1 {a2[4]} {a2[5]} {a2[6]} {a2[7]}");
-            //Log!.Info($"float1 {a2[8]} {a2[9]} {a2[10]} {a2[11]}");
-            //Log!.Info($"float1 {a2[12]} {a2[13]} {a2[14]} {a2[15]}");
-
-            //Log!.Info($"float2 {a3[0]} {a3[1]} {a3[2]} {a3[3]}");
-            //Log!.Info($"float2 {a3[4]} {a3[5]} {a3[6]} {a3[7]}");
-            //Log!.Info($"float2 {a3[8]} {a3[9]} {a3[10]} {a3[11]}");
-            //Log!.Info($"float2 {a3[12]} {a3[13]} {a3[14]} {a3[15]}");
-            //Log!.Info($"item {z.Translation.X},{z.Translation.Y},{z.Translation.Z},{z.Translation.W} | {z.Rotation.X}, {z.Rotation.Y}, {z.Rotation.Z}, {z.Rotation.W}");
-            //extraChange += 0.001f;
-            //Quaternion q = Quaternion.CreateFromYawPitchRoll(0, 0, xivr_Ex.cfg!.data.offsetAmountYFPS * Deg2Rad);
-            //a2[0-3] rotation quat
-            //a2[0] = q.X;
-            //a2[1] = q.Y;
-            //a2[2] = q.Z;
-            //a2[3] = q.W;
-
-            //Matrix4x4 m = Matrix4x4.Identity;
-            //a3[0] = m.M11; a3[1] = m.M11; a3[2] = m.M11; a3[3] = m.M11;
-            //a3[4] = m.M11; a3[5] = m.M11; a3[6] = m.M11; a3[7] = m.M11;
-            //a3[8] = m.M11; a3[9] = m.M11; a3[10] = m.M11; a3[11] = m.M11;
-            //a3[12] = m.M11; a3[13] = m.M11; a3[14] = m.M11; a3[15] = m.M11;
-            //Vector4 forward = new Vector4(0, 0, 1, 0);
-            //forward.Y -= 1.4f;
-            //Matrix4x4 rot = Matrix4x4.CreateFromYawPitchRoll(xivr_Ex.cfg!.data.offsetAmountZFPS * Deg2Rad, 0, 0);
-
-            //*targetPosition = Vector4.Transform(forward, headMatrix);
-
-            //a3[0] = forward.X;
-            //a3[1] = forward.Y;
-            //a3[2] = forward.Z;
-            //a3[3] = forward.W;
-
-            //*headPosition = forward;
-            //*forcedHeadRotation = q;
-
-
-            //a4 = xivr_Ex.cfg!.data.offsetAmountZFPS / 100f;
-
-            //a3[0] = 4; a3[1] = 4; a3[2] = 4; a3[3] = 0;
-            //a3[4] = 0; a3[5] = 0; a3[6] = 0; a3[7] = 0;
-            //a3[8] = 0; a3[9] = 0; a3[10] = 0; a3[11] = 0;
-            //a3[12] = q.X; a3[13] = q.Y; a3[14] = q.Z; a3[15] = q.W;
-
-            return lookAtIKHook!.Original(a1, a2, targetPosition, a4, offsetHeadPosition, a6);
-
-            //return (byte*)nint.Zero;
-        }
-
-        //----
         // RenderSkeletonList
         //----
         private delegate void RenderSkeletonListDg(UInt64 RenderSkeletonLinkedList, float frameTiming);
@@ -3139,29 +2904,6 @@ namespace xivr
             }
         }
 
-        //----
-        // RenderSkeletonListSkeleton
-        //----
-        private delegate void RenderSkeletonListSkeletonDg(Skeleton* skeleton, float frameTiming);
-        //[Signature(Signatures.RenderSkeletonListSkeleton, DetourName = nameof(RenderSkeletonListSkeletonFn))]
-        private Hook<RenderSkeletonListSkeletonDg>? RenderSkeletonListSkeletonHook = null;
-
-        //[HandleStatus("RenderSkeletonListSkeleton")]
-        public void RenderSkeletonListSkeletonStatus(bool status, bool dispose)
-        {
-            if (dispose)
-                RenderSkeletonListSkeletonHook?.Dispose();
-            else
-                if (status)
-                RenderSkeletonListSkeletonHook?.Enable();
-            else
-                RenderSkeletonListSkeletonHook?.Disable();
-        }
-        private unsafe void RenderSkeletonListSkeletonFn(Skeleton* skeleton, float frameTiming)
-        {
-            RenderSkeletonListSkeletonHook!.Original(skeleton, frameTiming);
-        }
-
         private float prevFrameTiming = 0;
 
         //----
@@ -3193,30 +2935,6 @@ namespace xivr
 
             //Log!.Info($"RenderSkeletonListAnimationFn {(UInt64)RenderSkeletonLinkedList:x}");
             RenderSkeletonListAnimationHook!.Original(RenderSkeletonLinkedList, frameTiming, c);
-        }
-
-        //----
-        // RenderSkeletonListSkeleton
-        //----
-        private delegate void RenderSkeletonListPartialSkeletonDg(PartialSkeleton* skeleton, float frameTiming);
-        //[Signature(Signatures.RenderSkeletonListPartialSkeleton, DetourName = nameof(RenderSkeletonListPartialSkeletonFn))]
-        private Hook<RenderSkeletonListPartialSkeletonDg>? RenderSkeletonListPartialSkeletonHook = null;
-
-        //[HandleStatus("RenderSkeletonListPartialSkeleton")]
-        public void RenderSkeletonListPartialSkeletonStatus(bool status, bool dispose)
-        {
-            if (dispose)
-                RenderSkeletonListPartialSkeletonHook?.Dispose();
-            else
-                if (status)
-                RenderSkeletonListPartialSkeletonHook?.Enable();
-            else
-                RenderSkeletonListPartialSkeletonHook?.Disable();
-        }
-        private unsafe void RenderSkeletonListPartialSkeletonFn(PartialSkeleton* partialSkeleton, float frameTiming)
-        {
-            //Log!.Info($"RenderSkeletonListPartialSkeletonFn {(UInt64)partialSkeleton:x}");
-            RenderSkeletonListPartialSkeletonHook!.Original(partialSkeleton, frameTiming);
         }
 
         private unsafe void RunIKElement(stMultiIK* ikElement)
@@ -3825,110 +3543,6 @@ namespace xivr
             //    for (int i = 0; i < 1; i++)
             //        GetMultiplayerIKDataInner((Character*)targetSystem->ObjectFilterArray0[i], hmdMatrix, lhcMatrix, rhcMatrix);
             //targetSystem->ObjectFilterArray0.Length
-        }
-
-        private unsafe void ShowBoneLayoutInner(Character* character)
-        {
-            if (character == null)
-                return;
-
-            if ((ObjectKind)character->GameObject.ObjectKind == ObjectKind.Pc ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.BattleNpc ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.EventNpc ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.Mount ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.Companion ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.Retainer)
-            {
-                Structures.Model* model = (Structures.Model*)character->GameObject.DrawObject;
-                if (model == null)
-                    return;
-
-                BoneOutput.DrawBones(model->skeleton);
-            }
-        }
-        private unsafe void ShowBoneLayout()
-        {
-            //----
-            // Draws Skeletal overlay for all models
-            // to get the full bone list
-            //----
-            //Character* character = GetCharacterOrMouseover();
-            //if (character != null && character != targetSystem->ObjectFilterArray1[0])
-            //    ShowBoneLayoutInner(character);
-
-            for (int i = 0; i < targetSystem->ObjectFilterArray1.Length; i++)
-                ShowBoneLayoutInner((Character*)targetSystem->ObjectFilterArray1[i]);
-        }
-
-        private void ShowHandBoneLayout(poseType tPose, Matrix4x4 controller, float heightOffset = 1.0f)
-        {
-            fingerHandLayout hand = Imports.GetSkeletalPose(tPose);
-            Bone[] handArray = new Bone[31];
-
-            handArray[0] = new Bone((BoneList)BoneListEn.e_root, 0, 0, null, new hkQsTransformf(), new hkQsTransformf());
-            handArray[0].boneMatrix = hand.root.Convert().ToMatrix() * controller;// * Matrix4x4.CreateScale(-1, 1, -1);
-            handArray[1] = new Bone((BoneList)BoneListEn.e_wrist_l, 1, handArray[0].id, handArray[0], new hkQsTransformf(), new hkQsTransformf());
-            handArray[1].boneMatrix = hand.wrist.Convert().ToMatrix() * controller;
-            handArray[2] = new Bone((BoneList)BoneListEn.e_thumb_a_l, 2, handArray[1].id, handArray[1], new hkQsTransformf(), new hkQsTransformf());
-            handArray[2].boneMatrix = hand.thumb0Metacarpal.Convert().ToMatrix() * controller;
-            handArray[3] = new Bone((BoneList)BoneListEn.e_thumb_a_l, 3, handArray[2].id, handArray[2], new hkQsTransformf(), new hkQsTransformf());
-            handArray[3].boneMatrix = hand.thumb1Proximal.Convert().ToMatrix() * controller;
-            handArray[4] = new Bone((BoneList)BoneListEn.e_thumb_a_l, 4, handArray[2].id, handArray[2], new hkQsTransformf(), new hkQsTransformf());
-            handArray[4].boneMatrix = hand.thumb2Middle.Convert().ToMatrix() * controller;
-            handArray[5] = new Bone((BoneList)BoneListEn.e_thumb_a_l, 5, handArray[3].id, handArray[3], new hkQsTransformf(), new hkQsTransformf());
-            handArray[5].boneMatrix = hand.thumb3Distal.Convert().ToMatrix() * controller;
-            handArray[6] = new Bone((BoneList)BoneListEn.e_finger_index_a_l, 6, handArray[1].id, handArray[1], new hkQsTransformf(), new hkQsTransformf());
-            handArray[6].boneMatrix = hand.index0Metacarpal.Convert().ToMatrix() * controller;
-            handArray[7] = new Bone((BoneList)BoneListEn.e_finger_index_a_l, 7, handArray[6].id, handArray[6], new hkQsTransformf(), new hkQsTransformf());
-            handArray[7].boneMatrix = hand.index1Proximal.Convert().ToMatrix() * controller;
-            handArray[8] = new Bone((BoneList)BoneListEn.e_finger_index_a_l, 8, handArray[7].id, handArray[7], new hkQsTransformf(), new hkQsTransformf());
-            handArray[8].boneMatrix = hand.index2Middle.Convert().ToMatrix() * controller;
-            handArray[9] = new Bone((BoneList)BoneListEn.e_finger_index_a_l, 9, handArray[8].id, handArray[8], new hkQsTransformf(), new hkQsTransformf());
-            handArray[9].boneMatrix = hand.index3Distal.Convert().ToMatrix() * controller;
-            handArray[10] = new Bone((BoneList)BoneListEn.e_finger_middle_a_l, 10, handArray[1].id, handArray[1], new hkQsTransformf(), new hkQsTransformf());
-            handArray[10].boneMatrix = hand.middle0Metacarpal.Convert().ToMatrix() * controller;
-            handArray[11] = new Bone((BoneList)BoneListEn.e_finger_middle_a_l, 11, handArray[10].id, handArray[10], new hkQsTransformf(), new hkQsTransformf());
-            handArray[11].boneMatrix = hand.middle1Proximal.Convert().ToMatrix() * controller;
-            handArray[12] = new Bone((BoneList)BoneListEn.e_finger_middle_a_l, 12, handArray[11].id, handArray[11], new hkQsTransformf(), new hkQsTransformf());
-            handArray[12].boneMatrix = hand.middle2Middle.Convert().ToMatrix() * controller;
-            handArray[13] = new Bone((BoneList)BoneListEn.e_finger_middle_a_l, 13, handArray[12].id, handArray[12], new hkQsTransformf(), new hkQsTransformf());
-            handArray[13].boneMatrix = hand.middle3Distal.Convert().ToMatrix() * controller;
-            handArray[14] = new Bone((BoneList)BoneListEn.e_finger_ring_a_l, 14, handArray[1].id, handArray[1], new hkQsTransformf(), new hkQsTransformf());
-            handArray[14].boneMatrix = hand.ring0Metacarpal.Convert().ToMatrix() * controller;
-            handArray[15] = new Bone((BoneList)BoneListEn.e_finger_ring_a_l, 15, handArray[14].id, handArray[14], new hkQsTransformf(), new hkQsTransformf());
-            handArray[15].boneMatrix = hand.ring1Proximal.Convert().ToMatrix() * controller;
-            handArray[16] = new Bone((BoneList)BoneListEn.e_finger_ring_a_l, 16, handArray[15].id, handArray[15], new hkQsTransformf(), new hkQsTransformf());
-            handArray[16].boneMatrix = hand.ring2Middle.Convert().ToMatrix() * controller;
-            handArray[17] = new Bone((BoneList)BoneListEn.e_finger_ring_a_l, 17, handArray[16].id, handArray[16], new hkQsTransformf(), new hkQsTransformf());
-            handArray[17].boneMatrix = hand.ring3Distal.Convert().ToMatrix() * controller;
-            handArray[18] = new Bone((BoneList)BoneListEn.e_finger_pinky_a_l, 18, handArray[1].id, handArray[1], new hkQsTransformf(), new hkQsTransformf());
-            handArray[18].boneMatrix = hand.pinky0Metacarpal.Convert().ToMatrix() * controller;
-            handArray[19] = new Bone((BoneList)BoneListEn.e_finger_pinky_a_l, 19, handArray[18].id, handArray[18], new hkQsTransformf(), new hkQsTransformf());
-            handArray[19].boneMatrix = hand.pinky1Proximal.Convert().ToMatrix() * controller;
-            handArray[20] = new Bone((BoneList)BoneListEn.e_finger_pinky_a_l, 20, handArray[19].id, handArray[19], new hkQsTransformf(), new hkQsTransformf());
-            handArray[20].boneMatrix = hand.pinky2Middle.Convert().ToMatrix() * controller;
-            handArray[21] = new Bone((BoneList)BoneListEn.e_finger_pinky_a_l, 21, handArray[20].id, handArray[20], new hkQsTransformf(), new hkQsTransformf());
-            handArray[21].boneMatrix = hand.pinky3Distal.Convert().ToMatrix() * controller;
-            handArray[0].SetWorldFromBoneMatrix(true);
-
-            Matrix4x4 trnsOff = Matrix4x4.Identity;
-            Vector3 p1 = Vector3.Zero;
-            Vector3 p2 = Vector3.Zero;
-
-            if (tPose == poseType.LeftHand)
-                trnsOff = Matrix4x4.CreateTranslation(0.5f, heightOffset, 0);
-            else if (tPose == poseType.RightHand)
-                trnsOff = Matrix4x4.CreateTranslation(-0.5f, heightOffset, 0);
-
-            for (int i = 0; i < 22; i++)
-            {
-                if (handArray[i].parent == null)
-                    p1 = Vector3.Zero;
-                else
-                    p1 = Vector3.Transform(handArray[i].parent!.boneMatrix.Translation, trnsOff);
-                p2 = Vector3.Transform(handArray[i].boneMatrix.Translation, trnsOff);
-                Imports.SetRayCoordinate((float*)&p1, (float*)&p2);
-            }
         }
     }
 }
