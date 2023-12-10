@@ -463,7 +463,7 @@ namespace xivr
                     targetAddon->Alpha = targetAddonAlpha;
 
 
-                FirstToThirdPersonView();
+                FirstToThirdPersonView(true);
                 if (DisableSetCursorPosAddr != 0)
                     SafeMemory.Write<UInt64>((IntPtr)DisableSetCursorPosAddr, DisableSetCursorPosOrig);
 
@@ -488,9 +488,12 @@ namespace xivr
                 return 0;
             return cfgBase[list[index].Item1]->ConfigEntry[list[index].Item2].Value.UInt;
         }
-        private void FirstToThirdPersonView()
+        private void FirstToThirdPersonView(Boolean userInitiated)
         {
-            Imports.Recenter();
+            if (userInitiated)
+            {
+                Imports.Recenter();
+            }
             GameConfig.SetConfig(ConfigOption.AutoFaceTargetOnAction, true);
             //----
             // Set the near clip
@@ -520,9 +523,12 @@ namespace xivr
             }
         }
 
-        private void ThirdToFirstPersonView()
+        private void ThirdToFirstPersonView(Boolean userInitiated)
         {
-            Imports.Recenter();
+            if (userInitiated)
+            {
+                Imports.Recenter();
+            }
             GameConfig.SetConfig(ConfigOption.AutoFaceTargetOnAction, false);
             //----
             // Set the near clip
@@ -655,20 +661,25 @@ namespace xivr
                 virtualMouse.Y = halfScreen.Y + ((currentMouse.Y - halfScreen.Y) * mouseMultiplyer);
 
                 if (gameMode.Current == CameraModes.ThirdPerson && gameMode.Changed == true)
-                    FirstToThirdPersonView();
+                    FirstToThirdPersonView(true);
                 else if (gameMode.Current == CameraModes.FirstPerson && gameMode.Changed == true)
-                    ThirdToFirstPersonView();
+                    ThirdToFirstPersonView(true);
 
                 //----
                 // Changes to 3rd person when a cutscene is triggered
                 // and back when it ends
                 //----
                 if (inCutscene.Changed)
+                {
                     if (inCutscene.Current)
-                        FirstToThirdPersonView();
-                    else
-                        if (gameMode.Current == CameraModes.FirstPerson)
-                        ThirdToFirstPersonView();
+                    {
+                        FirstToThirdPersonView(false);
+                    }
+                    else if (gameMode.Current == CameraModes.FirstPerson)
+                    {
+                        ThirdToFirstPersonView(false);
+                    }
+                }
 
                 isMounted = false;
 
