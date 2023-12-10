@@ -1,14 +1,12 @@
-﻿using System;
-using System.Numerics;
-using System.Collections.Generic;
-using Dalamud.Logging;
+﻿using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
 using FFXIVClientStructs.Havok;
-using FFXIVClientStructs.FFXIV.Client.Graphics.Render;
-using Dalamud.Utility.Signatures;
+using System;
+using System.Collections.Generic;
+using System.Numerics;
 
 namespace xivr.Structures
 {
-    public unsafe struct stCommonSkelBoneList
+    public class stCommonSkelBoneList
     {
         public short e_root = -1;
         public short e_abdomen = -1;
@@ -68,7 +66,7 @@ namespace xivr.Structures
         public float armLength = 1.0f;
         public Dictionary<short, KeyValuePair<short, HashSet<short>>> layout = new Dictionary<short, KeyValuePair<short, HashSet<short>>>();
 
-        public stCommonSkelBoneList(Skeleton* skeleton)
+        public unsafe stCommonSkelBoneList(Skeleton* skeleton)
         {
             Dictionary<String, short> nameList = new Dictionary<String, short>();
             hkaSkeleton* hkaSkel = skeleton->SkeletonResourceHandles[0]->HavokSkeleton;

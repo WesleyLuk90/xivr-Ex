@@ -3241,12 +3241,11 @@ namespace xivr
             if (hkaSkel == null)
                 return;
 
-            stCommonSkelBoneList? maybeCsb = boneListCache.Get(hkaSkel);
-            if (maybeCsb is null)
+            stCommonSkelBoneList? csb = boneListCache.Get(hkaSkel);
+            if (csb is null)
             {
                 return;
             }
-            stCommonSkelBoneList csb = (stCommonSkelBoneList)maybeCsb;
 
             Matrix4x4 matrixHead = (Matrix4x4)ikElement->hmdMatrix;
             Matrix4x4 matrixLHC = (Matrix4x4)ikElement->lhcMatrix;
@@ -3392,12 +3391,11 @@ namespace xivr
             if (hkaSkel == null)
                 return;
 
-            stCommonSkelBoneList? maybeCsb = boneListCache.Get(hkaSkel);
-            if (maybeCsb is null)
+            stCommonSkelBoneList? csb = boneListCache.Get(hkaSkel);
+            if (csb is null)
             {
                 return;
             }
-            stCommonSkelBoneList csb = (stCommonSkelBoneList)maybeCsb;
 
             Transform transformS = skeleton->Transform;
             transformS.Rotation = Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), bonedCharacter->GameObject.Rotation);

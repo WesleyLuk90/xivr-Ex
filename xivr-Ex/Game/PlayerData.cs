@@ -88,12 +88,11 @@ namespace xivr.Game
                 return Matrix4x4.Identity;
             }
 
-            stCommonSkelBoneList? maybeCsb = boneListCache.Get(hkaSkel);
-            if (maybeCsb is null)
+            stCommonSkelBoneList? csb = boneListCache.Get(hkaSkel);
+            if (csb is null)
             {
                 return Matrix4x4.Identity;
             }
-            stCommonSkelBoneList csb = (stCommonSkelBoneList)maybeCsb;
 
             var plrSkeletonPosition = model->basePosition.ToMatrix();
 
