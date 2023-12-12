@@ -3400,58 +3400,6 @@ namespace xivr
 
 
 
-        private void CheckVisibilityInner(Character* character)
-        {
-            if (character == null)
-                return;
-
-            if ((ObjectKind)character->GameObject.ObjectKind == ObjectKind.Pc ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.BattleNpc ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.EventNpc ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.Mount ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.Companion ||
-                (ObjectKind)character->GameObject.ObjectKind == ObjectKind.Retainer)
-            {
-                Structures.Model* model = (Structures.Model*)character->GameObject.DrawObject;
-                if (model == null)
-                    return;
-
-                if (model->CullType == ModelCullTypes.InsideCamera && ((byte)character->GameObject.TargetableStatus & 2) == 2)
-                    model->CullType = ModelCullTypes.Visible;
-
-                DrawDataContainer* drawData = &character->DrawData;
-                if (drawData != null && !drawData->IsWeaponHidden)
-                {
-                    Structures.Model* mhWeap = (Structures.Model*)drawData->Weapon(DrawDataContainer.WeaponSlot.MainHand).DrawObject;
-                    if (mhWeap != null)
-                        mhWeap->CullType = ModelCullTypes.Visible;
-
-                    Structures.Model* ohWeap = (Structures.Model*)drawData->Weapon(DrawDataContainer.WeaponSlot.OffHand).DrawObject;
-                    if (ohWeap != null)
-                        ohWeap->CullType = ModelCullTypes.Visible;
-
-                    Structures.Model* fWeap = (Structures.Model*)drawData->Weapon(DrawDataContainer.WeaponSlot.Unk).DrawObject;
-                    if (fWeap != null)
-                        fWeap->CullType = ModelCullTypes.Visible;
-                }
-
-                Structures.Model* mount = (Structures.Model*)model->mountedObject;
-                if (mount != null)
-                    mount->CullType = ModelCullTypes.Visible;
-
-                Character.OrnamentContainer* oCont = &character->Ornament;
-                if (oCont != null)
-                {
-                    GameObject* bonedOrnament = (GameObject*)oCont->OrnamentObject;
-                    if (bonedOrnament != null)
-                    {
-                        Structures.Model* ornament = (Structures.Model*)bonedOrnament->DrawObject;
-                        if (ornament != null)
-                            ornament->CullType = ModelCullTypes.Visible;
-                    }
-                }
-            }
-        }
         private void CheckVisibility()
         {
             if (inCutscene.Current)
@@ -3462,7 +3410,7 @@ namespace xivr
             //----
             Character* character = playerData.GetCharacter();
             if (character != null && character != targetSystem->ObjectFilterArray0[0])
-                CheckVisibilityInner(character);
+                playerData.UpdateCull(character);
 
             for (int i = 0; i < Plugin.PartyList!.Length; i++)
             {
@@ -3471,7 +3419,7 @@ namespace xivr
                 {
                     Character* partyCharacter = (Character*)partyMember.Address;
                     if (character != null)
-                        CheckVisibilityInner(partyCharacter);
+                        playerData.UpdateCull(partyCharacter);
                 }
             }
 
@@ -3479,7 +3427,7 @@ namespace xivr
             // Check anyone in sight
             //----
             for (int i = 0; i < targetSystem->ObjectFilterArray1.Length; i++)
-                CheckVisibilityInner((Character*)targetSystem->ObjectFilterArray1[i]);
+                playerData.UpdateCull((Character*)targetSystem->ObjectFilterArray1[i]);
         }
 
         private void GetMultiplayerIKDataInner(bool isPlayer, Character* character, Matrix4x4 hmd, Matrix4x4 lhc, Matrix4x4 rhc)
