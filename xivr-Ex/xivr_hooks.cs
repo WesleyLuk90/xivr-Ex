@@ -1815,64 +1815,36 @@ namespace xivr
 
         public void ControllerInputFn(UInt64 a, UInt64 b, uint c)
         {
-            UInt64 controllerBase = *(UInt64*)(a + 0x70);
-            UInt64 controllerIndex = *(byte*)(a + 0x434);
+            ControllerStateEditor editor = new ControllerStateEditor(a);
 
-            UInt64 controllerAddress = controllerBase + 0x30 + ((controllerIndex * 0x1E6) * 4);
-            XBoxButtonOffsets* offsets = (XBoxButtonOffsets*)((controllerIndex * 0x798) + controllerBase);
-
-            leftBumperValue = *(float*)(controllerAddress + (UInt64)(offsets->left_bumper * 4));
+            leftBumperValue = editor.GetValue(editor.offsets->left_bumper);
 
             if (hooksSet && enableVR && Plugin.cfg!.data.motioncontrol)
             {
-                if (xboxStatus.dpad_up.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->dpad_up * 4)) = xboxStatus.dpad_up.value;
-                if (xboxStatus.dpad_down.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->dpad_down * 4)) = xboxStatus.dpad_down.value;
-                if (xboxStatus.dpad_left.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->dpad_left * 4)) = xboxStatus.dpad_left.value;
-                if (xboxStatus.dpad_right.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->dpad_right * 4)) = xboxStatus.dpad_right.value;
-                if (xboxStatus.left_stick_down.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_stick_down * 4)) = xboxStatus.left_stick_down.value;
-                if (xboxStatus.left_stick_up.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_stick_up * 4)) = xboxStatus.left_stick_up.value;
-                if (xboxStatus.left_stick_left.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_stick_left * 4)) = xboxStatus.left_stick_left.value;
-                if (xboxStatus.left_stick_right.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_stick_right * 4)) = xboxStatus.left_stick_right.value;
-                if (xboxStatus.right_stick_down.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_stick_down * 4)) = xboxStatus.right_stick_down.value;
-                if (xboxStatus.right_stick_up.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_stick_up * 4)) = xboxStatus.right_stick_up.value;
-                if (xboxStatus.right_stick_left.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_stick_left * 4)) = xboxStatus.right_stick_left.value;
-                if (xboxStatus.right_stick_right.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_stick_right * 4)) = xboxStatus.right_stick_right.value;
-                if (xboxStatus.button_y.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->button_y * 4)) = xboxStatus.button_y.value;
-                if (xboxStatus.button_b.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->button_b * 4)) = xboxStatus.button_b.value;
-                if (xboxStatus.button_a.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->button_a * 4)) = xboxStatus.button_a.value;
-                if (xboxStatus.button_x.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->button_x * 4)) = xboxStatus.button_x.value;
-                if (xboxStatus.left_bumper.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_bumper * 4)) = xboxStatus.left_bumper.value;
-                if (xboxStatus.left_trigger.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_trigger * 4)) = xboxStatus.left_trigger.value;
-                if (xboxStatus.left_stick_click.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_stick_click * 4)) = xboxStatus.left_stick_click.value;
-                if (xboxStatus.right_bumper.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_bumper * 4)) = xboxStatus.right_bumper.value;
-                if (xboxStatus.right_trigger.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_trigger * 4)) = xboxStatus.right_trigger.value;
-                if (xboxStatus.right_stick_click.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_stick_click * 4)) = xboxStatus.right_stick_click.value;
-                if (xboxStatus.start.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->start * 4)) = xboxStatus.start.value;
-                if (xboxStatus.select.active)
-                    *(float*)(controllerAddress + (UInt64)(offsets->select * 4)) = xboxStatus.select.value;
+                editor.SetIfActive(xboxStatus.dpad_up, editor.offsets->dpad_up);
+                editor.SetIfActive(xboxStatus.dpad_down, editor.offsets->dpad_down);
+                editor.SetIfActive(xboxStatus.dpad_left, editor.offsets->dpad_left);
+                editor.SetIfActive(xboxStatus.dpad_right, editor.offsets->dpad_right);
+                editor.SetIfActive(xboxStatus.left_stick_down, editor.offsets->left_stick_down);
+                editor.SetIfActive(xboxStatus.left_stick_up, editor.offsets->left_stick_up);
+                editor.SetIfActive(xboxStatus.left_stick_left, editor.offsets->left_stick_left);
+                editor.SetIfActive(xboxStatus.left_stick_right, editor.offsets->left_stick_right);
+                editor.SetIfActive(xboxStatus.right_stick_down, editor.offsets->right_stick_down);
+                editor.SetIfActive(xboxStatus.right_stick_up, editor.offsets->right_stick_up);
+                editor.SetIfActive(xboxStatus.right_stick_left, editor.offsets->right_stick_left);
+                editor.SetIfActive(xboxStatus.right_stick_right, editor.offsets->right_stick_right);
+                editor.SetIfActive(xboxStatus.button_y, editor.offsets->button_y);
+                editor.SetIfActive(xboxStatus.button_b, editor.offsets->button_b);
+                editor.SetIfActive(xboxStatus.button_a, editor.offsets->button_a);
+                editor.SetIfActive(xboxStatus.button_x, editor.offsets->button_x);
+                editor.SetIfActive(xboxStatus.left_bumper, editor.offsets->left_bumper);
+                editor.SetIfActive(xboxStatus.left_trigger, editor.offsets->left_trigger);
+                editor.SetIfActive(xboxStatus.left_stick_click, editor.offsets->left_stick_click);
+                editor.SetIfActive(xboxStatus.right_bumper, editor.offsets->right_bumper);
+                editor.SetIfActive(xboxStatus.right_trigger, editor.offsets->right_trigger);
+                editor.SetIfActive(xboxStatus.right_stick_click, editor.offsets->right_stick_click);
+                editor.SetIfActive(xboxStatus.start, editor.offsets->start);
+                editor.SetIfActive(xboxStatus.select, editor.offsets->select);
             }
 
             bool doLocomotion = false;
@@ -1890,8 +1862,9 @@ namespace xivr
             if (doLocomotion && Plugin.cfg!.data.vertloc)
                 movementManager->Ground.AscendDecendPitch = MathF.Min(1.5f, MathF.Max(-1.5f, (angles.X * 1.5f))) + 0.5f;
 
-            float up_down = (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_up * 4))) + -(*(float*)(controllerAddress + (UInt64)(offsets->left_stick_down * 4)));
-            float left_right = -(*(float*)(controllerAddress + (UInt64)(offsets->left_stick_left * 4))) + (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_right * 4)));
+            float up_down = editor.GetValue(editor.offsets->left_stick_up) - editor.GetValue(editor.offsets->left_stick_down);
+            float left_right = -editor.GetValue(editor.offsets->left_stick_left) + editor.GetValue(editor.offsets->left_stick_right);
+
 
             if (doLocomotion && gameMode.Current == CameraModes.ThirdPerson)
             {
@@ -1908,32 +1881,32 @@ namespace xivr
                 //Log!.Info($"{angles.Y * Rad2Deg} {newValue.Y} | {newValue.X} | {stickAngle * Rad2Deg}");
                 if (newValue.Y > 0)
                 {
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_up * 4))) = MathF.Abs(newValue.Y);
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_down * 4))) = 0;
+                    editor.SetValue(editor.offsets->left_stick_up, MathF.Abs(newValue.Y));
+                    editor.SetValue(editor.offsets->left_stick_down, 0);
                 }
                 else
                 {
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_up * 4))) = 0;
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_down * 4))) = MathF.Abs(newValue.Y);
+                    editor.SetValue(editor.offsets->left_stick_up, 0);
+                    editor.SetValue(editor.offsets->left_stick_down, MathF.Abs(newValue.Y));
                 }
 
                 if (newValue.X > 0)
                 {
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_left * 4))) = 0;
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_right * 4))) = MathF.Abs(newValue.X);
+                    editor.SetValue(editor.offsets->left_stick_left, 0);
+                    editor.SetValue(editor.offsets->left_stick_right, MathF.Abs(newValue.X));
                 }
                 else
                 {
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_left * 4))) = MathF.Abs(newValue.X);
-                    (*(float*)(controllerAddress + (UInt64)(offsets->left_stick_right * 4))) = 0;
+                    editor.SetValue(editor.offsets->left_stick_left, MathF.Abs(newValue.X));
+                    editor.SetValue(editor.offsets->left_stick_right, 0);
                 }
 
             }
             if (hooksSet && enableVR && Plugin.cfg!.data.motioncontrol)
             {
-                leftBumperValue = *(float*)(controllerAddress + (UInt64)(offsets->left_bumper * 4));
-                float curRightTriggerValue = *(float*)(controllerAddress + (UInt64)(offsets->right_trigger * 4));
-                float curRightBumperValue = *(float*)(controllerAddress + (UInt64)(offsets->right_bumper * 4));
+                leftBumperValue = editor.GetValue(editor.offsets->left_bumper);
+                float curRightTriggerValue = editor.GetValue(editor.offsets->right_trigger);
+                float curRightBumperValue = editor.GetValue(editor.offsets->right_bumper);
 
                 rightTriggerClick.Current = (curRightTriggerValue > 0.75f);
                 rightBumperClick.Current = (curRightBumperValue > 0.75f);
@@ -1974,7 +1947,9 @@ namespace xivr
                 }
 
                 if (isHousing)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_trigger * 4)) = 0;
+                {
+                    editor.SetValue(editor.offsets->right_trigger, 0);
+                }
 
                 //----
                 // Left Stick Pressed
@@ -1982,7 +1957,7 @@ namespace xivr
                 bool updateLeftAfterInput = false;
                 if (xboxStatus.left_stick_click.active == true && xboxStatus.left_stick_click.ChangedStatus == true)
                 {
-                    leftStickOrig = *(float*)(controllerAddress + (UInt64)(offsets->left_stick_click * 4));
+                    leftStickOrig = editor.GetValue(editor.offsets->left_stick_click);
                     leftStickTimer = Stopwatch.StartNew();
                     leftStickTimerHaptic.Current = false;
                 }
@@ -1993,9 +1968,13 @@ namespace xivr
                 {
                     leftStickTimer.Stop();
                     if (leftStickTimer.ElapsedMilliseconds > 1000)
+                    {
                         leftStickAltMode = ((leftStickAltMode) ? false : true);
+                    }
                     else
-                        *(float*)(controllerAddress + (UInt64)(offsets->left_stick_click * 4)) = leftStickOrig;
+                    {
+                        editor.SetValue(editor.offsets->left_stick_click, leftStickOrig);
+                    }
 
                     updateLeftAfterInput = true;
                     leftStickOrig = 0;
@@ -2005,8 +1984,10 @@ namespace xivr
                 {
                     leftStickTimerHaptic.Current = (leftStickTimer.ElapsedMilliseconds >= 1000);
                     if (leftStickTimerHaptic.Changed == true)
+                    {
                         Imports.HapticFeedback(ActionButtonLayout.haptics_left, 0.1f, 100.0f, 50.0f);
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_stick_click * 4)) = 0;
+                    }
+                    editor.SetValue(editor.offsets->left_stick_click, 0);
                 }
 
 
@@ -2016,7 +1997,7 @@ namespace xivr
                 bool updateRightAfterInput = false;
                 if (xboxStatus.right_stick_click.active == true && xboxStatus.right_stick_click.ChangedStatus == true)
                 {
-                    rightStickOrig = *(float*)(controllerAddress + (UInt64)(offsets->right_stick_click * 4));
+                    rightStickOrig = editor.GetValue(editor.offsets->right_stick_click);
                     rightStickTimer = Stopwatch.StartNew();
                     rightStickTimerHaptic.Current = false;
                 }
@@ -2027,10 +2008,12 @@ namespace xivr
                 {
                     rightStickTimer.Stop();
                     if (rightStickTimer.ElapsedMilliseconds > 1000)
+                    {
                         rightStickAltMode = ((rightStickAltMode) ? false : true);
+                    }
                     else
                     {
-                        *(float*)(controllerAddress + (UInt64)(offsets->right_stick_click * 4)) = rightStickOrig;
+                        editor.SetValue(editor.offsets->right_stick_click, rightStickOrig);
                     }
 
                     updateRightAfterInput = true;
@@ -2042,16 +2025,14 @@ namespace xivr
                     rightStickTimerHaptic.Current = (rightStickTimer.ElapsedMilliseconds >= 1000);
                     if (rightStickTimerHaptic.Changed == true)
                         Imports.HapticFeedback(ActionButtonLayout.haptics_right, 0.1f, 100.0f, 50.0f);
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_stick_click * 4)) = 0;
+                    editor.SetValue(editor.offsets->right_stick_click, 0);
                 }
 
                 if (isCharMake || Plugin.cfg!.data.disableXboxShoulder)
                 {
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_trigger * 4)) = 0;
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_trigger * 4)) = 0;
-
-                    //*(float*)(controllerAddress + (UInt64)(offsets->left_bumper * 4)) = 0; //needed for zooming
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_bumper * 4)) = 0;
+                    editor.SetValue(editor.offsets->left_trigger, 0);
+                    editor.SetValue(editor.offsets->right_trigger, 0);
+                    editor.SetValue(editor.offsets->right_bumper, 0);
                 }
 
                 ControllerInputHook!.Original(a, b, c);
@@ -2080,8 +2061,6 @@ namespace xivr
                                 {
                                     Vector3 mountAngles = GetAngles(modelMount->basePosition.Rotation.Convert());
                                     gameCamera->CurrentHRotation = mountAngles.Y;
-                                    //bonedCharacter->GameObject.Rotate(0);
-                                    //Plugin.Log!.Info($"{mountAngles}");
                                 }
                             }
                         }
@@ -2089,9 +2068,13 @@ namespace xivr
                 }
 
                 if (updateLeftAfterInput)
-                    *(float*)(controllerAddress + (UInt64)(offsets->left_stick_click * 4)) = leftStickOrig;
+                {
+                    editor.SetValue(editor.offsets->left_stick_click, leftStickOrig);
+                }
                 if (updateRightAfterInput)
-                    *(float*)(controllerAddress + (UInt64)(offsets->right_stick_click * 4)) = rightStickOrig;
+                {
+                    editor.SetValue(editor.offsets->right_stick_click, rightStickOrig);
+                }
             }
             else
             {
