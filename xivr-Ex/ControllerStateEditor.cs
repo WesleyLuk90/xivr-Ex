@@ -31,7 +31,7 @@ namespace xivr
             }
         }
 
-        private void SetValue(byte buttonOffset, float value)
+        public void SetValue(byte buttonOffset, float value)
         {
             *(float*)(controllerAddress + (UInt64)(buttonOffset * 4)) = value;
         }
